@@ -1,6 +1,6 @@
 # University Management System API Documentation
 
-This document provides a complete overview of the backend API for the University Management System, including authentication, user management, and bulk operations. It also details the database schema for all models.
+This document provides a complete overview of the backend API for the University Management System, including authentication, user management, bulk operations, and announcement uploads. It also details the database schema for all models.
 
 ---
 
@@ -10,10 +10,12 @@ This document provides a complete overview of the backend API for the University
   - [Admin](#admin)
   - [Faculty](#faculty)
   - [Student](#student)
+  - [Announcement](#announcement)
 - [Database Models](#database-models)
   - [Admin Table](#admin-table)
   - [Faculty Table](#faculty-table)
   - [Student Table](#student-table)
+  - [Announcement Table](#announcement-table)
 - [Bulk Operations](#bulk-operations)
 - [Authentication](#authentication)
 - [Error Handling](#error-handling)
@@ -32,6 +34,7 @@ This document provides a complete overview of the backend API for the University
 | `/admin/add-faculty`                   | POST   | Add new faculty                  | `{ "name": "...", "department": "...", "email": "...", "dob": "...", ... }`          | `{ "message": "Faculty added successfully" }`                                                      |
 | `/admin/add-student`                   | POST   | Add new student                  | `{ "name": "...", "email": "...", "course": "...", "branch": "...", ... }`           | `{ "success": true, "message": "Student added successfully", "data": { ... } }`                    |
 | `/admin/add-bulk-student`              | POST   | Bulk add students (CSV/Excel)    | `multipart/form-data` with file field                                                | `{ "message": "Bulk students added successfully", "added": N, "failedEmails": [ ... ] }`           |
+| `/admin/upload-announcement`           | POST   | Upload announcement (with file)  | `multipart/form-data` with fields: `type`, `title`, `description`, `file` (optional) | `{ "message": "Announcement saved successfully", "url": "https://..." }`                           |
 
 ### Faculty
 
@@ -44,6 +47,12 @@ This document provides a complete overview of the backend API for the University
 | Endpoint                              | Method | Description                      | Request Body / Params                                                                 | Response Example                                                                                   |
 |----------------------------------------|--------|----------------------------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | `/student/login`                      | POST   | Student login                    | `{ "email": "student@email.com", "password": "password" }`                           | `{ "message": "Login successful", "token": "...", "role": "student" }`                             |
+
+### Announcement
+
+| Endpoint                              | Method | Description                      | Request Body / Params                                                                 | Response Example                                                                                   |
+|----------------------------------------|--------|----------------------------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `/admin/upload-announcement`           | POST   | Upload announcement (with file)  | `multipart/form-data` with fields: `type`, `title`, `description`, `file` (optional) | `{ "message": "Announcement saved successfully", "url": "https://..." }`                           |
 
 ---
 
@@ -141,6 +150,34 @@ ALTER TABLE Student AUTO_INCREMENT = 1000;
 
 ---
 
+### Announcement Table
+
+| Column         | Type           | Constraints           | Description         |
+|----------------|----------------|----------------------|---------------------|
+| announcement_id| INT            | PRIMARY KEY, AUTO_INCREMENT | Unique announcement ID |
+| title          | VARCHAR(255)   | NOT NULL             | Announcement title  |
+| type           | ENUM           | NOT NULL             | Announcement type   |
+| description    | TEXT           |                      | Description         |
+| file_url       | VARCHAR(500)   |                      | File URL (optional) |
+| admin_id       | INT            | NOT NULL, FOREIGN KEY| Admin who posted    |
+| created_at     | TIMESTAMP      | DEFAULT CURRENT_TIMESTAMP | Creation time   |
+
+**SQL:**
+```sql
+CREATE TABLE announcement (
+    announcement_id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    type ENUM('Holiday', 'Academic', 'Sports', 'Exam', 'Fees', 'Admission', 'Others') NOT NULL,
+    description TEXT,
+    file_url VARCHAR(500),
+    admin_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES admin(admin_id)
+);
+```
+
+---
+
 ## Bulk Operations
 
 - **Bulk Add Students:**  
@@ -183,6 +220,9 @@ Set these in your `.env` file:
 | `JWT_SECRET_KEY`    | JWT secret key               |
 | `ADMIN_EMAIL`       | Email for sending credentials|
 | `ADMIN_EMAIL_PASS`  | Email password/app password  |
+| `CLOUD_NAME`        | Cloudinary cloud name        |
+| `CLOUD_API_KEY`     | Cloudinary API key           |
+| `CLOUD_SECRET_KEY`  | Cloudinary API secret        |
 
 ---
 
@@ -200,10 +240,13 @@ Set these in your `.env` file:
    JWT_SECRET_KEY=your_secret_key
    ADMIN_EMAIL=your_email@gmail.com
    ADMIN_EMAIL_PASS=your_email_app_password
+   CLOUD_NAME=your_cloudinary_cloud_name
+   CLOUD_API_KEY=your_cloudinary_api_key
+   CLOUD_SECRET_KEY=your_cloudinary_api_secret
    ```
 
 3. **Setup MySQL database:**
-   - Run the SQL scripts in [`backend/model/createDatabase.sql`](backend/model/createDatabase.sql), [`backend/model/admin.sql`](backend/model/admin.sql), [`backend/model/faculty.sql`](backend/model/faculty.sql), and [`backend/model/student.sql`](backend/model/student.sql).
+   - Run the SQL scripts in [`backend/model/createDatabase.sql`](backend/model/createDatabase.sql), [`backend/model/admin.sql`](backend/model/admin.sql), [`backend/model/faculty.sql`](backend/model/faculty.sql), [`backend/model/student.sql`](backend/model/student.sql), and [`backend/model/announcement.sql`](backend/model/announcement.sql).
 
 4. **Start the server:**
    ```sh
@@ -247,7 +290,6 @@ Content-Type: application/json
 {
   "name": "Satya Prakash Singh",
   "email": "satyasingh159357@gmail.com",
-  "roll_no": 1001,
   "course": "B.Tech",
   "branch": "Computer Science",
   "semester": 5,
@@ -268,6 +310,26 @@ Content-Type: multipart/form-data
 file: [students.csv or students.xlsx]
 ```
 
+### Upload Announcement
+
+```http
+POST /admin/upload-announcement
+Content-Type: multipart/form-data
+
+type: "Academic"
+title: "Mid-Sem Exam Schedule"
+description: "Mid-semester exams will start from 15th August."
+file: [optional: exam_schedule.pdf]
+```
+
+**Response:**
+```json
+{
+  "message": "Announcement saved successfully",
+  "url": "https://res.cloudinary.com/your_cloud_name/..."
+}
+```
+
 ---
 
 ## Notes
@@ -275,7 +337,8 @@ file: [students.csv or students.xlsx]
 - Passwords are randomly generated and sent to users via email.
 - All sensitive operations require authentication.
 - For bulk uploads, ensure your file matches the required schema.
+- Announcement uploads support optional file attachments (PDF, images, etc.) stored on Cloudinary.
 
 ---
 
-For further details, refer to the source code
+For further details, refer to the
