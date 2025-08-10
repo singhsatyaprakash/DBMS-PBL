@@ -5,7 +5,7 @@ const dotenv=require('dotenv');
 const connDB=require('./db/db.conn');
 const cors = require('cors');
 dotenv.config();
-const privateRoutes=require('./private/admin.create');
+// const privateRoutes=require('./private/admin.create');
 const adminRoutes=require('./routes/admin.routes');
 const facultyRoutes=require('./routes/faculty.routes');
 const studentRoutes=require('./routes/students.routes');
@@ -17,6 +17,7 @@ connDB.connect((err) => {
         console.log('Connected to the database');
     }
 });
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

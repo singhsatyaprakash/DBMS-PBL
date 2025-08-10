@@ -3,6 +3,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const util = require('util');
 require('dotenv').config();
+const cloudinary=require('../db/cloudinary.conn');
+const fs=require('fs');
+const path = require('path');
 
 const query = util.promisify(connDB.query).bind(connDB);
 const adminService = require('../services/admin.services');
@@ -114,11 +117,6 @@ const addStudent = async (req, res) => {
     }
 };
 
-
-
-
-
-
 const addBulkStudent = async (req, res) => {
     try {
         if (!req.file) {
@@ -172,4 +170,50 @@ const addBulkStudent = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-module.exports = {adminLogin,addFaculty,addStudent,addBulkStudent};
+
+
+const uploadAnnouncement = async (req, res) => {
+    const { type, title, description } = req.body;
+    let fileUrl = null;
+
+    try {
+        if (req.file) {
+            // Normalize path for all OS
+            const filePath = req.file.path.split(path.sep).join(path.posix.sep);
+            const result = await cloudinary.uploader.upload(filePath, {
+                folder: type || "Others",
+                resource_type: 'auto',
+                access_mode: "public"
+            });
+            fs.unlinkSync(req.file.path);
+            fileUrl = result.secure_url;
+        }
+
+        // Save announcement info in DB
+        await query(
+            `INSERT INTO announcement (title, description, type, file_url, admin_id, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [
+                title || '',
+                description || '',
+                type || 'Others',
+                fileUrl,
+                req.user?.admin_id || 1 
+            ]
+        );
+
+        res.status(201).json({
+            message: "Announcement saved successfully",
+            url: fileUrl
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: "Uploading failed.",
+            error: err.message
+        });
+    }
+}
+
+
+module.exports = {adminLogin,addFaculty,addStudent,addBulkStudent,uploadAnnouncement};
