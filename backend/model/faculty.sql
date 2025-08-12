@@ -14,3 +14,4 @@ DROP TABLE FACULTY;
 truncate table faculty;
 select * from faculty;
 rollback;
+delete from faculty where faculty_id=3;

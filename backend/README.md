@@ -1,6 +1,6 @@
 # University Management System API Documentation
 
-This document provides a complete overview of the backend API for the University Management System, including authentication, user management, bulk operations, and announcement uploads. It also details the database schema for all models.
+This document provides a complete overview of the backend API for the University Management System, including authentication, faculty/student management, courses, subjects, semester-wise subject mapping, bulk operations, and announcement uploads. It also details the database schema for all models.
 
 ---
 
@@ -11,6 +11,7 @@ This document provides a complete overview of the backend API for the University
   - [Faculty](#faculty)
   - [Student](#student)
   - [Announcement](#announcement)
+  - [Courses & Subjects](#courses--subjects)
 - [Database Models](#database-models)
   - [Admin Table](#admin-table)
   - [Faculty Table](#faculty-table)
@@ -35,6 +36,16 @@ This document provides a complete overview of the backend API for the University
 | `/admin/add-student`                   | POST   | Add new student                  | `{ "name": "...", "email": "...", "course": "...", "branch": "...", ... }`           | `{ "success": true, "message": "Student added successfully", "data": { ... } }`                    |
 | `/admin/add-bulk-student`              | POST   | Bulk add students (CSV/Excel)    | `multipart/form-data` with file field                                                | `{ "message": "Bulk students added successfully", "added": N, "failedEmails": [ ... ] }`           |
 | `/admin/upload-announcement`           | POST   | Upload announcement (with file)  | `multipart/form-data` with fields: `type`, `title`, `description`, `file` (optional) | `{ "message": "Announcement saved successfully", "url": "https://..." }`                           |
+### Courses & Subjects
+
+| Endpoint                                         | Method | Description                      | Request Body / Params                                                                 | Response Example                                                                                   |
+|-------------------------------------------------|--------|----------------------------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `/admin/add-new-course`                         | POST   | Add new course                   | `{ "course_name": "...", "duration_years": 3, "department": "...", "course_code": "...", "description": "..." }` | `{ "message": "Course added successfully" }`                                                       |
+| `/admin/get-all-courses`                        | GET    | Get all courses                  | None                                                                                 | `[ { "course_id": 1, "course_name": "...", ... }, ... ]`                                           |
+| `/admin/add-new-subject`                        | POST   | Add new subject                  | `{ "subject_name": "...", "subject_code": "...", "course": "...", "credits": 4, "description": "..." }` | `{ "message": "Subject added successfully" }`                                                      |
+| `/admin/get-all-subjects`                       | GET    | Get all subjects                 | None                                                                                 | `[ { "subject_id": 1, "subject_name": "...", ... }, ... ]`                                         |
+| `/admin/get-all-subjects-by-course/:course`     | GET    | Get all subjects by course name  | Path param: course name (string)                                                     | `[ { "subject_id": 1, "subject_name": "...", ... }, ... ]`                                         |
+| `/admin/add-course-subjects-semster-wise`       | POST   | Assign subjects to a course semester | `{ "course_id": 1, "semester": 3, "subject_ids": [5, 7, 9] }`                         | `{ "message": "Subjects for semester updated successfully" }`                                     |
 
 ### Faculty
 
@@ -175,7 +186,75 @@ CREATE TABLE announcement (
     FOREIGN KEY (admin_id) REFERENCES admin(admin_id)
 );
 ```
+### Courses
+| Column           | Type         | Constraints                  | Description                             |
+| ---------------- | ------------ | ---------------------------- | --------------------------------------- |
+| course\_id       | INT          | PRIMARY KEY, AUTO\_INCREMENT | Unique course ID                        |
+| course\_name     | VARCHAR(100) | NOT NULL, UNIQUE             | Name of the course                      |
+| duration\_years  | INT          | NOT NULL                     | Duration of the course in years         |
+| total\_semesters | INT          | NOT NULL                     | Total number of semesters in the course |
+| course\_code     | VARCHAR(20)  | UNIQUE                       | Unique course code                      |
+| department       | VARCHAR(100) |                              | Department offering the course          |
+| description      | TEXT         |                              | Additional details about the course     |
 
+**SQL:**
+```sql
+CREATE TABLE Courses (
+    course_id INT PRIMARY KEY AUTO_INCREMENT,
+    course_name VARCHAR(100) NOT NULL UNIQUE,
+    duration_years INT NOT NULL,
+    total_semesters INT NOT NULL,
+    course_code VARCHAR(20) UNIQUE,
+    department VARCHAR(100),
+    description TEXT
+);
+```
+
+### Subjects
+| Column        | Type         | Constraints                  | Description                          |
+| ------------- | ------------ | ---------------------------- | ------------------------------------ |
+| subject\_id   | INT          | PRIMARY KEY, AUTO\_INCREMENT | Unique subject ID                    |
+| subject\_name | VARCHAR(100) | NOT NULL                     | Name of the subject                  |
+| subject\_code | VARCHAR(20)  | NOT NULL, UNIQUE             | Unique code for the subject          |
+| course        | VARCHAR(100) | NOT NULL                     | Course this subject belongs to       |
+| credits       | INT          | NOT NULL                     | Credits awarded for this subject     |
+| description   | TEXT         |                              | Additional details about the subject |
+
+**SQL:**
+```sql
+CREATE TABLE Subjects (
+    subject_id INT PRIMARY KEY AUTO_INCREMENT,
+    subject_name VARCHAR(100) NOT NULL,
+    subject_code VARCHAR(20) NOT NULL UNIQUE,
+    course VARCHAR(100) NOT NULL,
+    credits INT NOT NULL,
+    description TEXT
+);
+```
+
+### Course_Subjects
+| Column                                    | Type    | Constraints                                                          | Description                                |
+| ----------------------------------------- | ------- | -------------------------------------------------------------------- | ------------------------------------------ |
+| cs\_id                                    | INT     | PRIMARY KEY, AUTO\_INCREMENT                                         | Unique course-subject mapping ID           |
+| course\_id                                | INT     | NOT NULL, FOREIGN KEY (Courses.course\_id) ON DELETE CASCADE         | ID of the course                           |
+| subject\_id                               | INT     | NOT NULL, FOREIGN KEY (Subjects.subject\_id) ON DELETE CASCADE       | ID of the subject                          |
+| semester                                  | INT     | NOT NULL                                                             | Semester in which the subject is taught    |
+| is\_active                                | BOOLEAN | DEFAULT TRUE                                                         | Status of the mapping (active/inactive)    |
+| UNIQUE(course\_id, subject\_id, semester) | -       | Ensures a subject can only be assigned once per semester in a course | Unique course-subject-semester combination |
+
+**SQL:**
+```sql
+CREATE TABLE Course_Subjects (
+    cs_id INT PRIMARY KEY AUTO_INCREMENT,
+    course_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    semester INT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (course_id) REFERENCES Courses(course_id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id) ON DELETE CASCADE,
+    UNIQUE(course_id, subject_id, semester)
+);
+```
 ---
 
 ## Bulk Operations
@@ -329,8 +408,46 @@ file: [optional: exam_schedule.pdf]
   "url": "https://res.cloudinary.com/your_cloud_name/..."
 }
 ```
+### Get All Subjects by Course
+```http
+GET /admin/get-all-subjects-by-course/BCA
+```
+
+**Response:**
+```json
+[
+  {
+    "subject_id": 1,
+    "subject_name": "Mathematics I",
+    "subject_code": "MATH101",
+    "course": "BCA",
+    "credits": 4,
+    "description": "Basic Mathematics"
+  }
+]
+```
+
+### Assign Semester-Wise Subjects
+```http
+POST /admin/add-course-subjects-semster-wise
+Content-Type: application/json
+
+{
+  "course_id": 1,
+  "semester": 3,
+  "subject_ids": [5, 7, 9]
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Subjects for semester updated successfully"
+}
+```
 
 ---
+
 
 ## Notes
 
@@ -339,6 +456,10 @@ file: [optional: exam_schedule.pdf]
 - For bulk uploads, ensure your file matches the required schema.
 - Announcement uploads support optional file attachments (PDF, images, etc.) stored on Cloudinary.
 
+
+- Semester values must be valid for the course (check `total_semesters` in `Courses`).
+- `subject_ids` must exist in the `Subjects` table and belong to the same course.
+
 ---
 
-For further details, refer to the
+For further details, refer to the email:singhsatyaprakash70675@gmail.com
