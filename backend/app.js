@@ -9,7 +9,7 @@ dotenv.config();
 const adminRoutes=require('./routes/admin.routes');
 const facultyRoutes=require('./routes/faculty.routes');
 const studentRoutes=require('./routes/students.routes');
-
+const allUserRoutes=require('./routes/allusers.routes');
 connDB.connect((err) => {
     if (err) {
         console.error('Database connection failed:',err);
@@ -29,6 +29,7 @@ app.use(cors());
 app.use('/admin',adminRoutes);
 app.use('/faculty',facultyRoutes);
 app.use('/student',studentRoutes);
+app.use('/',allUserRoutes);
 
 
 app.get("/check",(req,res)=>{
