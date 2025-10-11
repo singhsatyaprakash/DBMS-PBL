@@ -10,9 +10,9 @@ CREATE TABLE Faculty (
     address TEXT,
     gender VARCHAR(10)
 );
--- DROP TABLE FACULTY;
--- truncate table faculty; 
+DROP TABLE FACULTY;
+truncate table faculty; 
 select * from faculty;
 rollback;
-delete from faculty where faculty_id=1;
+delete from faculty where faculty_id=2;
 

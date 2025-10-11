@@ -6,9 +6,8 @@ const {upload}=require('../db/multer.conn');
 
 
 
-//registering...
-router.post('/signin',adminController.adminLogin)
-
+router.post('/login',adminController.adminLogin);
+router.post('/validate-token',adminController.validateToken);
 
 router.post('/add-student', adminController.addStudent);
 router.post('/add-bulk-student',upload.single('file'),adminController.addBulkStudent);
@@ -52,6 +51,6 @@ router.post('/add-faculty', adminController.addFaculty);
 router.get('/get-all-faculty',adminController.getAllFaculty);
 
 //assigning subject course section wise to faculty...
-router.post('/assign-course-secction-subject-to-faculty',adminController.assignSubjectToFaculty);
+router.post('/assign-course-section-subject-to-faculty',adminController.assignSubjectToFaculty);
 
 module.exports = router;

@@ -19,10 +19,8 @@ function generateRandomPassword(length = 8) {
     }
     return password;
 }
-
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
-    // console.log(req.body);
     if (!email || !password) {
         return res.status(400).json({ message: "All fields are required" });
     }
@@ -35,11 +33,15 @@ exports.adminLogin = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
+        const adminData = { id: result[0].admin_id, email: result[0].email, name: result[0].name };
         const token = jwt.sign(
-            { id: result[0].admin_id, email: result[0].email, name: result[0].name },
+            adminData,
             process.env.JWT_SECRET_KEY,
             { expiresIn: '1h' }
         );
+
+        await query('UPDATE admin SET token = ? WHERE admin_id = ?', [token, result[0].admin_id]);
+
         return res.status(200).json({
             message: "Login successful",
             token,
@@ -48,6 +50,58 @@ exports.adminLogin = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Server error" });
+    }
+};
+
+exports.adminLogout = async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+    if (!token) {
+        return res.status(401).json({ message: "No token provided." });
+    }
+
+    try {
+        // Add token to the blocklist
+        await query('INSERT INTO blocked_tokens (token) VALUES (?)', [token]);
+        // Clear the token from the admin table
+        await query('UPDATE admin SET token = NULL WHERE token = ?', [token]);
+        res.status(200).json({ message: "Logged out successfully." });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ message: "Server error during logout." });
+    }
+};
+
+
+exports.validateToken=async(req,res)=>{
+    const { token } = req.body;
+    if(!token){
+        return res.status(400).json({message:"Token not found!"});
+    }
+    
+    try {
+    
+        const adminResult = await query('SELECT * FROM admin WHERE token = ?', [token]);
+        if (adminResult.length === 0) {
+            return res.status(401).json({ message: "Invalid or expired token." });
+        }
+
+        const blockedResult = await query('SELECT * FROM blocked_tokens WHERE token = ?', [token]);
+        if (blockedResult.length > 0) {
+            return res.status(401).json({ message: "Token has been invalidated. Please log in again." });
+        }
+
+        jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: "Token verification failed.", error: err.message });
+            }
+            res.status(200).json({ message: "Token is valid.", user: decoded });
+        });
+
+    } catch (error) {
+        console.error("Token validation error:", error);
+        res.status(500).json({ message: "Server error during token validation." });
     }
 };
 
@@ -143,7 +197,7 @@ exports.addStudent = async (req, res) => {
     }
 };
 
-/////probleming  this route... check later....
+
 exports.addBulkStudent = async (req, res) => {
     try {
         if (!req.file) {
@@ -305,6 +359,7 @@ exports.uploadAnnouncement = async (req, res) => {
 }
 
 exports.addNewCourse = async (req, res) => {
+    
     const { course_name, duration_years, department, course_code, description } = req.body;
 
     if (!course_name || !course_code || !duration_years) {

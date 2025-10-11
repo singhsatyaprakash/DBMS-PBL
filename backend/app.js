@@ -25,7 +25,7 @@ app.use(express.static("public"));
 app.use(express.static("uploads"));
 app.use(cors());
 
-// app.use("/",privateRoutes);
+// app.use("/private",privateRoutes);
 app.use('/admin',adminRoutes);
 app.use('/faculty',facultyRoutes);
 app.use('/student',studentRoutes);
