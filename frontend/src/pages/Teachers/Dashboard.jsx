@@ -1,8 +1,10 @@
+// FILE: src/pages/Teachers/Dashboard.jsx
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Sidebar from "./Sidebar";
+import Sidebar from "../../components/Sidebar";
 import {
-  DashboardContainer,
+  AdminDashboardContainer as DashboardContainer, // Renaming for generic use
   Content,
   Section,
   SectionTitle,
@@ -13,104 +15,44 @@ import {
   PDFViewer,
 } from "../../styles/DashboardStyles";
 
-const API_BASE_URL = "http://localhost:8080/api";
-
 const TeacherDashboard = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [teacherData, setTeacherData] = useState(null);
-  const [loadingTeacher, setLoadingTeacher] = useState(true);
   const [studentCount, setStudentCount] = useState(0);
-  const [teacherCount, setTeacherCount] = useState(0);
   const [classCount, setClassCount] = useState(0);
   const [calendarPdf, setCalendarPdf] = useState(null);
-  const [loadingCalendar, setLoadingCalendar] = useState(true);
   const [currentCalendarTitle, setCurrentCalendarTitle] = useState("");
 
+  // Fetch teacher-specific data
   useEffect(() => {
-    const fetchTeacherData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const email = localStorage.getItem("userEmail");
-        const response = await axios.get(
-          `${API_BASE_URL}/faculty/by-email/${email}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setTeacherData(response.data);
-      } catch (error) {
-        console.error("Error fetching teacher data:", error);
-      } finally {
-        setLoadingTeacher(false);
-      }
+    // In a real app, you would fetch data for the logged-in teacher
+    const dummyTeacherData = {
+      name: "Dr. Vikrant Sharma",
+      univId: "FAC007",
+      department: "Computer Science",
+      email: "vikrant.sharma@example.com",
+      contactNo: "+91 91234 56789",
     };
-    fetchTeacherData();
+    setTeacherData(dummyTeacherData);
+  }, []);
+  
+  // Fetch overview data (student and class counts)
+  useEffect(() => {
+    // In a real app, you would fetch these counts from your API
+    setStudentCount(120); // Dummy data
+    setClassCount(5);     // Dummy data
   }, []);
 
+  // Fetch the academic calendar
   useEffect(() => {
-    const facultyUnivId = localStorage.getItem("facultyUnivId");
-
-    axios
-      .get(`${API_BASE_URL}/AdminDashboard/students/count`, {
-        headers: {
-          "X-Faculty-UnivId": facultyUnivId,
-          "Content-Type": "application/json",
-        },
-      })
-      .then((response) => setStudentCount(response.data))
-      .catch((error) => console.error("Error fetching student count:", error));
-
-    axios
-      .get(`${API_BASE_URL}/AdminDashboard/faculty/count`, {
-        headers: {
-          "X-Faculty-UnivId": facultyUnivId,
-          "Content-Type": "application/json",
-        },
-      })
-      .then((response) => setTeacherCount(response.data))
-      .catch((error) => console.error("Error fetching teacher count:", error));
-
-    axios
-      .get(`${API_BASE_URL}/AdminDashboard/classes/count`, {
-        headers: {
-          "X-Faculty-UnivId": facultyUnivId,
-          "Content-Type": "application/json",
-        },
-      })
-      .then((response) => setClassCount(response.data))
-      .catch((error) => console.error("Error fetching class count:", error));
+    // This would be the same API call as the admin dashboard
+    // For now, we'll simulate it.
+    console.log("Fetching academic calendar...");
   }, []);
-
-  useEffect(() => {
-    const fetchCalendar = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/calendar`, {
-          responseType: "blob",
-        });
-        if (response.data.size > 0) {
-          const pdfUrl = URL.createObjectURL(response.data);
-          setCalendarPdf(pdfUrl);
-          const header = response.headers["content-disposition"];
-          const match = header && header.match(/filename="(.+)"/);
-          setCurrentCalendarTitle(match ? match[1] : "Academic Calendar");
-        }
-      } catch (error) {
-        console.error("Error fetching calendar:", error);
-      } finally {
-        setLoadingCalendar(false);
-      }
-    };
-    fetchCalendar();
-    return () => {
-      if (calendarPdf) URL.revokeObjectURL(calendarPdf);
-    };
-  }, []);
-
-  if (loadingTeacher) return <div>Loading dashboard...</div>;
 
   return (
     <DashboardContainer>
-      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
+      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} userType="teacher" />
       <Content $isOpen={isOpen}>
         <Section>
           <SectionTitle>
@@ -119,57 +61,49 @@ const TeacherDashboard = () => {
           <CardContainer>
             <Card>
               <CardTitle>Professional Information</CardTitle>
-              <CardContent>
-                <div>University ID: {teacherData?.univId || "N/A"}</div>
-                <div>Department: {teacherData?.department || "N/A"}</div>
-                <div>DOB: {teacherData?.dob || "N/A"}</div>
+              <CardContent style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                <div><strong>University ID:</strong> {teacherData?.univId || "N/A"}</div>
+                <div><strong>Department:</strong> {teacherData?.department || "N/A"}</div>
               </CardContent>
             </Card>
             <Card>
               <CardTitle>Contact Information</CardTitle>
-              <CardContent>
-                <div>Email: {teacherData?.email || "N/A"}</div>
-                <div>Phone: {teacherData?.contactNo || "N/A"}</div>
-                <div>Address: {teacherData?.address || "N/A"}</div>
+              <CardContent style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                <div><strong>Email:</strong> {teacherData?.email || "N/A"}</div>
+                <div><strong>Phone:</strong> {teacherData?.contactNo || "N/A"}</div>
               </CardContent>
             </Card>
           </CardContainer>
         </Section>
-
         <Section>
           <SectionTitle>Overview</SectionTitle>
           <CardContainer>
             <Card>
-              <CardTitle>Total Students</CardTitle>
+              <CardTitle>Your Students</CardTitle>
               <CardContent>{studentCount}</CardContent>
             </Card>
             <Card>
-              <CardTitle>Total Teachers</CardTitle>
-              <CardContent>{teacherCount}</CardContent>
-            </Card>
-            <Card>
-              <CardTitle>Total Classes</CardTitle>
+              <CardTitle>Your Classes</CardTitle>
               <CardContent>{classCount}</CardContent>
             </Card>
           </CardContainer>
         </Section>
-
         <Section>
-          <SectionTitle>{currentCalendarTitle}</SectionTitle>
-          {loadingCalendar ? (
-            <div>Loading calendar...</div>
-          ) : calendarPdf ? (
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <PDFViewer
-                src={calendarPdf}
-                width="80%"
-                height="600px"
-                title={currentCalendarTitle}
-              />
-            </div>
-          ) : (
-            <div>No calendar available.</div>
-          )}
+          <SectionTitle>Academic Calendar</SectionTitle>
+          <Card>
+            <CardContent style={{fontSize: '1rem'}}>
+              {calendarPdf ? (
+                <PDFViewer
+                  src={calendarPdf}
+                  width="100%"
+                  height="500px"
+                  title={currentCalendarTitle}
+                />
+              ) : (
+                <p>The academic calendar is not available at this time.</p>
+              )}
+            </CardContent>
+          </Card>
         </Section>
       </Content>
     </DashboardContainer>

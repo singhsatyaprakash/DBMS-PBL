@@ -1,106 +1,154 @@
-import React, { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
-import axios from "axios";
+// FILE: src/pages/Admin/Announcement.jsx
+
+import React, { useState, useEffect } from 'react';
+import Sidebar from '../../components/Sidebar';
+import styled from "styled-components";
+
+// Reusing styles from GlobalStyles for consistency
 import {
-  AnnouncementContainer,
   Content,
-  Title,
-  AnnouncementForm,
-  FormGroup,
-  Label,
-  TextArea,
+  Header,
+  Form,
+  List,
+  ListItem,
   Button,
-  AnnouncementList,
-  AnnouncementItem,
-  AnnouncementContent,
-} from "../../styles/AnnouncementStyles";
+  TextArea,
+  Input as FormInput,
+  SuccessMessage,
+  ErrorMessage,
+} from '../../styles/GlobalStyles';
 
-const Announcement = () => {
-  const [message, setMessage] = useState("");
-  const [title, setTitle] = useState("General Announcement");
+const AnnouncementWrapper = styled.div`
+  display: flex;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+`;
+
+const AnnouncementContent = styled.div`
+  h3 {
+    margin-top: 0;
+    color: #333;
+  }
+  p {
+    margin-bottom: 10px;
+    color: #555;
+  }
+`;
+
+const AdminAnnouncement = () => {
+  const [isOpen, setIsOpen] = useState(true);
   const [announcements, setAnnouncements] = useState([]);
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '' });
+  const [feedback, setFeedback] = useState({ message: '', type: '' });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post("http://localhost:8080/api/admin/announcement", {
-        title,
-        message,
-      });
-      alert("Announcement sent successfully!");
-      setMessage("");
-      fetchAllAnnouncements();
-    } catch (error) {
-      console.error("Error sending announcement:", error);
-      alert("Failed to send announcement");
-    }
-  };
-
-  const fetchAllAnnouncements = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:8080/api/all/announcement"
-      );
-      setAnnouncements(response.data);
-    } catch (error) {
-      console.error("Error fetching announcements:", error);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:8080/api/delete/Announcement/${id}`);
-      fetchAllAnnouncements();
-      alert("Announcement deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting announcement:", error);
-      alert("Failed to delete announcement");
-    }
-  };
-
+  // Load existing announcements on component mount
   useEffect(() => {
-    fetchAllAnnouncements();
+    // In a real app, you'd fetch all announcements
+    const dummyData = [
+      { id: 1, title: 'Mid-Term Exam Schedule', message: 'The schedule for the upcoming mid-term examinations has been posted.', date: '2025-08-15' },
+      { id: 2, title: 'Holiday Notice: Independence Day', message: 'The university will remain closed on August 15th on account of Independence Day.', date: '2025-08-12' },
+    ];
+    setAnnouncements(dummyData);
   }, []);
 
-  return (
-    <AnnouncementContainer>
-      <Sidebar />
-      <Content>
-        <Title>Announcement</Title>
+  // Effect to clear feedback message after 3 seconds
+  useEffect(() => {
+    if (feedback.message) {
+      const timer = setTimeout(() => {
+        setFeedback({ message: '', type: '' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
-        <AnnouncementForm onSubmit={handleSubmit}>
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewAnnouncement(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!newAnnouncement.title || !newAnnouncement.message) {
+      setFeedback({ message: 'Please fill in both the title and the message.', type: 'error' });
+      return;
+    }
+    const announcementToAdd = {
+      ...newAnnouncement,
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+    };
+    setAnnouncements(prev => [announcementToAdd, ...prev]);
+    setNewAnnouncement({ title: '', message: '' }); // Reset form
+    setFeedback({ message: 'Announcement posted successfully!', type: 'success' });
+  };
+
+  return (
+    <AnnouncementWrapper>
+      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} userType="admin" />
+      <Content $isOpen={isOpen}>
+        <Header>Manage Announcements</Header>
+        
+        {feedback.message && (
+          feedback.type === 'success' 
+            ? <SuccessMessage>{feedback.message}</SuccessMessage>
+            : <ErrorMessage>{feedback.message}</ErrorMessage>
+        )}
+
+        <Form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label htmlFor="announcement">Announcement:</Label>
-            <TextArea
+            <Label htmlFor="title">Title:</Label>
+            <FormInput
+              type="text"
+              id="title"
+              name="title"
+              value={newAnnouncement.title}
+              onChange={handleInputChange}
               required
-              rows={4}
-              cols={50}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
             />
           </FormGroup>
-          <Button type="submit">Send Announcement</Button>
-        </AnnouncementForm>
+          <FormGroup>
+            <Label htmlFor="message">Message:</Label>
+            <TextArea
+              id="message"
+              name="message"
+              rows="5"
+              value={newAnnouncement.message}
+              onChange={handleInputChange}
+              required
+            />
+          </FormGroup>
+          <Button type="submit">Post Announcement</Button>
+        </Form>
 
-        <h2>All Announcements</h2>
-        <AnnouncementList>
+        <hr style={{ margin: '2rem 0' }} />
+
+        <h2>Previously Posted</h2>
+        <List>
           {announcements.length > 0 ? (
             announcements.map((item) => (
-              <AnnouncementItem key={item.id}>
+              <ListItem key={item.id}>
                 <AnnouncementContent>
-                  <strong>{item.title}</strong>
+                  <h3>{item.title}</h3>
                   <p>{item.message}</p>
-                  <Button onClick={() => handleDelete(item.id)}>Delete</Button>
+                  <small>Posted on: {new Date(item.date).toLocaleDateString()}</small>
                 </AnnouncementContent>
-              </AnnouncementItem>
+              </ListItem>
             ))
           ) : (
-            <p>No announcements yet.</p>
+            <p>No announcements have been posted yet.</p>
           )}
-        </AnnouncementList>
+        </List>
       </Content>
-    </AnnouncementContainer>
+    </AnnouncementWrapper>
   );
 };
 
-export default Announcement;
+export default AdminAnnouncement;

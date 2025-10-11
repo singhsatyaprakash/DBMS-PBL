@@ -1,103 +1,90 @@
-// AdminDashboardStyles.js
-import styled from "styled-components";
+// FILE: src/styles/DashboardStyles.js
+
+import styled from 'styled-components';
 
 export const AdminDashboardContainer = styled.div`
   display: flex;
+  width: 100%;
 `;
 
 export const Content = styled.div`
-  flex: 1;
+  flex-grow: 1;
   padding: 2rem;
   margin-left: ${({ $isOpen }) => ($isOpen ? "250px" : "80px")};
   transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 `;
 
 export const TopContent = styled.div`
-  display: flex;
-  gap: 20px;
-  flex: 1; /* Take remaining space */
-`;
-export const DashboardContainer = styled.div`
-  display: flex;
-  min-height: 100vh;
-  background-color: #f8fafc;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
 `;
 
 export const BottomContent = styled.div`
-  margin-top: 20px;
-  display: flex; /* Make the content side by side */
-  gap: 20px; /* Add gap between the components */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
 `;
 
-export const Section = styled.section`
-  margin-bottom: 40px;
-  flex: 1; /* Make the sections expand to fill the available space */
+export const Section = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
 
 export const SectionTitle = styled.h2`
-  font-size: 24px;
-  margin-bottom: 20px;
-  color: #333333; /* Darker text color */
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1rem;
 `;
 
 export const CardContainer = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 1rem;
 `;
 
 export const Card = styled.div`
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease-in-out;
-  cursor: pointer;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(5px);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   flex: 1;
-  max-width: 250px;
-  &:hover {
-    transform: translateY(-5px);
-  }
 `;
 
 export const CardTitle = styled.h3`
-  font-size: 18px;
-  margin-bottom: 10px;
-  color: #007bff;
+  font-size: 1.1rem;
+  color: #555;
+  margin-top: 0;
+  margin-bottom: 1rem;
 `;
 
-export const CardContent = styled.p`
-  font-size: 16px;
-  color: #555555;
-`;
-
-export const StudentDashboardContainer = styled.div`
-  display: flex;
-  padding-left: 240px;
-`;
-
-export const TeacherDashboardContainer = styled.div`
-  display: flex;
-  padding-left: 240px;
+export const CardContent = styled.div`
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
 `;
 
 export const Modal = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
 `;
 
 export const ModalContent = styled.div`
-  background-color: white;
+  background: white;
   padding: 2rem;
   border-radius: 8px;
-  width: 80%;
+  width: 90%;
   max-width: 500px;
 `;
 
@@ -105,32 +92,33 @@ export const ModalActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 `;
+
 export const Button = styled.button`
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: #fff;
+  padding: 10px 20px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
+  background-color: #007bff;
+  color: white;
 
   &:hover {
     background-color: #0056b3;
   }
-
-  ${(props) =>
-    props.secondary &&
-    `
+  
+  ${({ secondary }) => secondary && `
     background-color: #6c757d;
     &:hover {
       background-color: #5a6268;
     }
   `}
 `;
+
 export const Input = styled.input`
   width: 100%;
-  padding: 0.5rem;
+  padding: 10px;
   margin-bottom: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -143,5 +131,5 @@ export const FileInput = styled.input`
 
 export const PDFViewer = styled.iframe`
   border: 1px solid #ddd;
-  margin-bottom: 1rem;
+  border-radius: 4px;
 `;
