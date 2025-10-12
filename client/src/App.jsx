@@ -1,19 +1,28 @@
-import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import AdminLogin from './Pages/AdminPages/AdminLogin'
-import Home from './Pages/OtherPages/Home'
-import AdminDashboard from './Pages/AdminPages/AdminDashboard'
-import StudentDashboard from './Pages/StudentPages/StudentDashboard'
-import Departments from './Pages/AdminPages/Departments'
-import Admissions from './Pages/AdminPages/Admissions'
-import Notice from './Pages/AdminPages/Notice'
-import Announcements from './Pages/AdminPages/Announcements'
-import Courses from './Pages/AdminPages/Courses'
-import Faculty from './Pages/AdminPages/Faculty'
-import Students from './Pages/AdminPages/Students'
-import ExamTimetable from './Pages/AdminPages/ExamTimetable'
-import Result from './Pages/AdminPages/Result'
-import Library from './Pages/AdminPages/Library'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+
+// Import Layouts
+import AdminLayout from './Pages/AdminPages/Layout';
+import StudentLayout from './Pages/StudentPages/StudentLayout';
+import AcademicLayout from './Pages/StudentPages/AcademicLayout';
+
+// Import Pages
+import Home from './Pages/OtherPages/Home';
+import AdminLogin from './Pages/AdminPages/AdminLogin';
+import AdminDashboard from './Pages/AdminPages/AdminDashboard';
+import Announcements from './Pages/AdminPages/Announcements';
+import Departments from './Pages/AdminPages/Departments';
+import Courses from './Pages/AdminPages/Courses';
+import Faculty from './Pages/AdminPages/Faculty';
+// ... import other admin pages
+
+import StudentDashboard from './Pages/StudentPages/StudentDashboard';
+
+// Placeholder Pages for Academic Section
+const AcademicHomePage = () => <div className="p-4">Please select an option from the Academic Menu.</div>;
+const AttendancePage = () => <div className="p-4">This is the Attendance Page.</div>;
+const TimetablePage = () => <div className="p-4">This is the Timetable Page.</div>;
+
 
 const App = () => {
   return (
@@ -21,20 +30,36 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/admissions" element={<Admissions />} />
-        <Route path="/admin/announcements" element={<Announcements />} />
-        <Route path="/admin/departments" element={<Departments />} />
-        <Route path="/admin/courses" element={<Courses />} />
-        <Route path="/admin/faculty" element={<Faculty />} />
-        <Route path="/admin/students" element={<Students />} />
-        <Route path="/admin/exam-timetable" element={<ExamTimetable />} />
-        <Route path="/admin/result" element={<Result />} />
-        <Route path="/admin/library" element={<Library />} />
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="departments" element={<Departments />} />
+          <Route path="courses" element={<Courses />} />
+          <Route path="faculty" element={<Faculty />} />
+          {/* Add other admin routes like students, result, etc. here */}
+        </Route>
+
+        {/* Main Student Routes */}
+        <Route path="/student" element={<StudentLayout />}>
+            <Route index element={<Navigate to="/student/dashboard" replace />} />
+            <Route path="dashboard" element={<StudentDashboard />} />
+            {/* Add other main student routes like 'fee' here */}
+        </Route>
+
+        {/* Academic Section Routes (uses its own layout) */}
+        <Route path="/student/academic" element={<AcademicLayout />}>
+            <Route index element={<AcademicHomePage />} />
+            <Route path="attendance" element={<AttendancePage />} />
+            <Route path="timetable" element={<TimetablePage />} />
+            {/* Add other academic sub-routes here */}
+        </Route>
+
       </Routes>
     </Router>
-  )
-}
+  );
+};
 
-export default App
+export default App;
