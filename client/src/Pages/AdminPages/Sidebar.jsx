@@ -11,12 +11,11 @@ import {
   FaRegNewspaper,
   FaUniversity,
 } from "react-icons/fa";
-
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 const menuItems = [
   { name: "Admissions", path: "/admin/admissions", icon: <FaUniversity /> },
-  { name: "Notice", path: "/admin/notice", icon: <FaRegNewspaper /> },
   { name: "Announcements", path: "/admin/announcements", icon: <FaBullhorn /> },
-  { name: "Departments", path: "/admin/departments", icon: <FaBullhorn/> },
+  { name: "Departments", path: "/admin/departments", icon: <AccountTreeIcon/> },
   { name: "Courses", path: "/admin/courses", icon: <FaBookOpen /> },
   { name: "Faculty", path: "/admin/faculty", icon: <FaChalkboardTeacher /> },
   { name: "Students", path: "/admin/students", icon: <FaUserGraduate /> },

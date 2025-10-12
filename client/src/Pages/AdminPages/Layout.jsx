@@ -15,7 +15,7 @@ const Layout = ({ children }) => {
         <main
           className={`${
             isOpen ? "ml-[220px]" : "ml-0"
-          } pt-[60px] p-6 flex-1 overflow-y-auto transition-all duration-300`}
+          } pt-[80px] p-6 flex-1 overflow-y-auto transition-all duration-300`}
         >
           {children}
         </main>
