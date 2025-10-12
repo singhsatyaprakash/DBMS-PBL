@@ -19,6 +19,7 @@ function generateRandomPassword(length = 8) {
     }
     return password;
 }
+
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -103,6 +104,50 @@ exports.validateToken=async(req,res)=>{
         res.status(500).json({ message: "Server error during token validation." });
     }
 };
+
+
+exports.uploadAnnouncement = async (req, res) => {
+    const { type, title, description } = req.body;
+    let fileUrl = null;
+
+    try {
+        if (req.file) {
+            // Normalize path for all OS
+            const filePath = req.file.path.split(path.sep).join(path.posix.sep);
+            const result = await cloudinary.uploader.upload(filePath, {
+                folder: type || "Others",
+                resource_type: 'auto',
+                access_mode: "public"
+            });
+            fs.unlinkSync(req.file.path);
+            fileUrl = result.secure_url;
+        }
+
+        // Save announcement info in DB
+        await query(
+            `INSERT INTO announcement (title, description, type, file_url, admin_id, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [
+                title || '',
+                description || '',
+                type || 'Others',
+                fileUrl,
+                req.user?.admin_id || 1 
+            ]
+        );
+
+        res.status(201).json({
+            message: "Announcement saved successfully",
+            url: fileUrl
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: "Uploading failed.",
+            error: err.message
+        });
+    }
+}
 
 
 exports.addStudent = async (req, res) => {
@@ -314,48 +359,6 @@ exports.addBulkStudent = async (req, res) => {
 
 
 
-exports.uploadAnnouncement = async (req, res) => {
-    const { type, title, description } = req.body;
-    let fileUrl = null;
-
-    try {
-        if (req.file) {
-            // Normalize path for all OS
-            const filePath = req.file.path.split(path.sep).join(path.posix.sep);
-            const result = await cloudinary.uploader.upload(filePath, {
-                folder: type || "Others",
-                resource_type: 'auto',
-                access_mode: "public"
-            });
-            fs.unlinkSync(req.file.path);
-            fileUrl = result.secure_url;
-        }
-
-        // Save announcement info in DB
-        await query(
-            `INSERT INTO announcement (title, description, type, file_url, admin_id, created_at)
-             VALUES (?, ?, ?, ?, ?, NOW())`,
-            [
-                title || '',
-                description || '',
-                type || 'Others',
-                fileUrl,
-                req.user?.admin_id || 1 
-            ]
-        );
-
-        res.status(201).json({
-            message: "Announcement saved successfully",
-            url: fileUrl
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            message: "Uploading failed.",
-            error: err.message
-        });
-    }
-}
 
 exports.addNewCourse = async (req, res) => {
     
