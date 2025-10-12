@@ -1,15 +1,19 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import axios from 'axios';
 import Layout from "./Layout";
 import {
   FaPlus, FaTimes, FaFileAlt, FaFilter, FaCalendarAlt, FaSortAmountDown, FaTag, FaFileImport, FaEdit, FaTrash
 } from 'react-icons/fa';
 
-// Helper function to format date
+// Define the API base URL once
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+// Helper function to format date - slightly simplified
 const formatDateForInput = (date) => {
-  return date.toISOString().split('T')[0];
+  return new Date(date).toISOString().slice(0, 10);
 };
 
-// Helper function for tag styling
+// Helper function for tag styling (no changes needed)
 const getTagClasses = (type) => {
   switch (type) {
     case 'Exam':
@@ -30,18 +34,19 @@ const getTagClasses = (type) => {
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
-
   const [editingId, setEditingId] = useState(null);
+
+  // NEW: State to handle loading during form submission for better UX
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState('Academic');
+  const [type, setType] = useState('Others');
   const [file, setFile] = useState(null);
-  
+
   // Filter and Sort State
   const [filterType, setFilterType] = useState('All');
   const [sortOrder, setSortOrder] = useState('date-desc');
@@ -51,17 +56,41 @@ const Announcements = () => {
     return formatDateForInput(date);
   });
   const [endDate, setEndDate] = useState(formatDateForInput(new Date()));
-  
-  useEffect(() => {
-    return () => {
-      announcements.forEach(item => {
-        if (item.fileURL) {
-          URL.revokeObjectURL(item.fileURL);
-        }
-      });
-    };
-  }, [announcements]);
 
+  // REFACTORED: Centralized function to fetch and normalize announcements
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/public/get-announcements`);
+      if (response.data && response.data.announcements) {
+        const normalized = response.data.announcements.map(a => ({
+          id: a.announcement_id || a.id,
+          title: a.title,
+          description: a.description,
+          type: a.type,
+          date: a.created_at ? formatDateForInput(a.created_at) : null,
+          fileURL: a.file_url || null,
+          fileName: a.file_url ? a.file_url.split('/').pop() : null
+        }));
+        setAnnouncements(normalized);
+      }
+    } catch (err) {
+      console.error('Error fetching announcements', err);
+      alert('Could not fetch announcements.');
+    }
+  }, []);
+
+  // Fetch announcements on initial component mount
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  const resetFormState = () => {
+    setEditingId(null);
+    setTitle('');
+    setDescription('');
+    setType('Others');
+    setFile(null);
+  };
 
   const handleOpenFormModal = (announcement = null) => {
     if (announcement) {
@@ -69,13 +98,9 @@ const Announcements = () => {
       setTitle(announcement.title);
       setDescription(announcement.description);
       setType(announcement.type);
-      setFile(null);
+      setFile(null); // File is not editable, must be re-uploaded
     } else {
-      setEditingId(null);
-      setTitle('');
-      setDescription('');
-      setType('Academic');
-      setFile(null);
+      resetFormState();
     }
     setIsFormModalOpen(true);
   };
@@ -85,53 +110,67 @@ const Announcements = () => {
     setIsViewModalOpen(true);
   };
 
-  const handleDelete = (id) => {
+  // UPDATED: handleDelete now uses the centralized fetchAnnouncements function
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this announcement?")) {
-      setAnnouncements(announcements.filter(item => item.id !== id));
-    }
-  };
-
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    if (!title || !description) return alert('Title and Description are required.');
-    
-    if (editingId) {
-      setAnnouncements(announcements.map(item => 
-        item.id === editingId 
-        ? { ...item, title, description, type, fileName: file ? file.name : item.fileName, fileURL: file ? URL.createObjectURL(file) : item.fileURL } 
-        : item
-      ));
-    } else {
-      const newAnnouncement = {
-        id: Date.now(), title, description, type,
-        date: new Date().toISOString().split('T')[0],
-        fileName: file ? file.name : null,
-        fileURL: file ? URL.createObjectURL(file) : null
-      };
-      setAnnouncements([newAnnouncement, ...announcements]);
-    }
-    
-    setIsFormModalOpen(false);
-  };
-  
-  const filteredAndSortedAnnouncements = useMemo(() => {
-    const result = announcements
-      .filter(item => filterType === 'All' || item.type === filterType)
-      .filter(item => {
-        if (!startDate || !endDate) return true;
-        return item.date >= startDate && item.date <= endDate;
-      });
-
-    return result.slice().sort((a, b) => {
-      switch (sortOrder) {
-        case 'alpha-asc': return a.title.localeCompare(b.title);
-        case 'alpha-desc': return b.title.localeCompare(a.title);
-        case 'date-asc': return new Date(a.date) - new Date(b.date);
-        default: return new Date(b.date) - new Date(a.date);
+      try {
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/admin/delete-announcement/${id}`);
+        // Instead of re-fetching manually, call the refactored function
+        fetchAnnouncements();
+      } catch (err) {
+        console.error('Delete failed', err);
+        alert('Delete failed');
       }
-    });
-  }, [announcements, filterType, sortOrder, startDate, endDate]);
+    }
+  };
 
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!title || !description) {
+      return alert('Title and Description are required.');
+    }
+
+    setIsSubmitting(true); // Set loading state to true
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('type', type);
+    if (file) formData.append('announcement_file', file);
+
+    try {
+      if (editingId) {
+        await axios.put(`${API_BASE_URL}/admin/update-announcement/${editingId}`, formData);
+      } else {
+        await axios.post(`${API_BASE_URL}/admin/add-announcement`, formData);
+      }
+      
+      alert(`Announcement ${editingId ? 'updated' : 'added'} successfully`);
+      setIsFormModalOpen(false);
+      resetFormState();
+      fetchAnnouncements(); // Refresh the list with the latest data
+      
+    } catch (err) {
+      console.error('Submission failed', err);
+      alert('Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false); // Reset loading state regardless of outcome
+    }
+  };
+
+  const filteredAndSortedAnnouncements = useMemo(() => {
+    return announcements
+      .filter(item => filterType === 'All' || item.type === filterType)
+      .filter(item => !startDate || !endDate || (item.date >= startDate && item.date <= endDate))
+      .sort((a, b) => {
+        switch (sortOrder) {
+          case 'alpha-asc': return a.title.localeCompare(b.title);
+          case 'alpha-desc': return b.title.localeCompare(a.title);
+          case 'date-asc': return new Date(a.date) - new Date(b.date);
+          default: return new Date(b.date) - new Date(a.date);
+        }
+      });
+  }, [announcements, filterType, sortOrder, startDate, endDate]);
 
   return (
     <Layout>
@@ -142,7 +181,7 @@ const Announcements = () => {
         </button>
       </div>
       
-      {/* --- THIS SECTION IS NOW COMPLETE --- */}
+      {/* Filter Section - No changes needed */}
       <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 mb-8">
         <div className="flex items-center gap-2 mb-4">
           <FaFilter className="text-slate-500" />
@@ -171,6 +210,7 @@ const Announcements = () => {
         </div>
       </div>
 
+      {/* Announcements List - No changes needed */}
       <div className="space-y-5">
         {filteredAndSortedAnnouncements.length === 0 ? (
           <div className="text-center py-16 px-6 bg-white rounded-xl shadow-sm border border-slate-200">
@@ -194,7 +234,7 @@ const Announcements = () => {
                   {isLongDescription ? `${item.description.substring(0, 200)}...` : item.description}
                   {isLongDescription && (<button onClick={() => handleOpenViewModal(item)} className="text-blue-600 font-semibold ml-2 hover:underline">Read More</button>)}
                 </p>
-                {item.fileName && item.fileURL && (<a href={item.fileURL} download={item.fileName} className="flex items-center gap-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-3 hover:bg-blue-100 transition-colors w-max"><FaFileAlt /><span className="font-medium text-sm">{item.fileName}</span></a>)}
+                {item.fileName && item.fileURL && (<a href={item.fileURL} download={item.fileName} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-3 hover:bg-blue-100 transition-colors w-max"><FaFileAlt /><span className="font-medium text-sm">{item.fileName}</span></a>)}
                 <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-3 mt-4">
                   <button onClick={() => handleOpenFormModal(item)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 font-semibold transition-colors"><FaEdit /> Edit</button>
                   <button onClick={() => handleDelete(item.id)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-red-600 font-semibold transition-colors"><FaTrash /> Delete</button>
@@ -205,12 +245,14 @@ const Announcements = () => {
         )}
       </div>
 
+      {/* Form Modal - UPDATED with loading state */}
       {isFormModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 relative">
             <h3 className="text-xl font-bold text-gray-800 mb-4">{editingId ? "Edit Announcement" : "Add New Announcement"}</h3>
-            <button onClick={() => setIsFormModalOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><FaTimes size={20} /></button>
+            <button onClick={() => setIsFormModalOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 disabled:opacity-50" disabled={isSubmitting}><FaTimes size={20} /></button>
             <form onSubmit={handleFormSubmit} className="space-y-4 pt-4">
+              {/* Form fields are unchanged */}
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title</label>
                 <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500" required />
@@ -237,13 +279,20 @@ const Announcements = () => {
                 </div>
               </div>
               <div className="text-right pt-2">
-                <button type="submit" className="inline-flex justify-center py-2 px-6 border shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">Upload</button>
+                <button 
+                  type="submit"
+                  disabled={isSubmitting} 
+                  className="inline-flex justify-center py-2 px-6 border shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Uploading...' : 'Upload'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* View Modal - No changes needed */}
       {isViewModalOpen && selectedAnnouncement && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl p-6 relative">
