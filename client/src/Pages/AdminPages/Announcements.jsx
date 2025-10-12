@@ -1,19 +1,15 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useContext } from "react";
 import axios from 'axios';
 import Layout from "./Layout";
 import {
   FaPlus, FaTimes, FaFileAlt, FaFilter, FaCalendarAlt, FaSortAmountDown, FaTag, FaFileImport, FaEdit, FaTrash
 } from 'react-icons/fa';
+import { AdminContext } from "../../context/AdminContext";
 
-// Define the API base URL once
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-// Helper function to format date - slightly simplified
 const formatDateForInput = (date) => {
   return new Date(date).toISOString().slice(0, 10);
 };
 
-// Helper function for tag styling (no changes needed)
 const getTagClasses = (type) => {
   switch (type) {
     case 'Exam':
@@ -38,9 +34,9 @@ const Announcements = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
-  // NEW: State to handle loading during form submission for better UX
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const { admin } = useContext(AdminContext);
+  // console.log(admin.admin.admin_id);
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -60,7 +56,7 @@ const Announcements = () => {
   // REFACTORED: Centralized function to fetch and normalize announcements
   const fetchAnnouncements = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/public/get-announcements`);
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/public/get-announcements`);
       if (response.data && response.data.announcements) {
         const normalized = response.data.announcements.map(a => ({
           id: a.announcement_id || a.id,
@@ -136,13 +132,14 @@ const Announcements = () => {
     formData.append('title', title);
     formData.append('description', description);
     formData.append('type', type);
+    formData.append('admin_id',admin.admin.admin_id);
     if (file) formData.append('announcement_file', file);
 
     try {
       if (editingId) {
-        await axios.put(`${API_BASE_URL}/admin/update-announcement/${editingId}`, formData);
+        await axios.put(`${import.meta.env.VITE_BACKEND_URL}/admin/update-announcement/${editingId}`, formData);
       } else {
-        await axios.post(`${API_BASE_URL}/admin/add-announcement`, formData);
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/admin/add-announcement`, formData);
       }
       
       alert(`Announcement ${editingId ? 'updated' : 'added'} successfully`);

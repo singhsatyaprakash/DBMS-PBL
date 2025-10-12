@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import {AdminContext} from "../../context/AdminContext";
 const ProfileMenu = () => {
+  const {admin}=useContext(AdminContext);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -14,25 +15,21 @@ const ProfileMenu = () => {
 
   const logoutAdmin = async () => {
     const token = localStorage.getItem("token");
-    let response = await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/admin/logout`,
-      { token }
-    );
-    // console.log(response);
+    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/admin/logout`,{ token });
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     navigate('/admin/login');
   };
 
   return (
-    <div 
+    <div
       className="relative"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
       <div className="flex items-center space-x-2 cursor-pointer">
         <FaUserCircle size={30} />
-        <span className="font-medium">Satya Prakash Singh</span>
+        <span className="font-medium">{admin.admin.name}</span>
       </div>
 
       <AnimatePresence>

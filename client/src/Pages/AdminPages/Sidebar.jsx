@@ -12,8 +12,10 @@ import {
   FaUniversity,
 } from "react-icons/fa";
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import { IoHome } from "react-icons/io5";
+// admin context can be imported when needed in future
 const menuItems = [
-  { name: "Dashboard", path: "/admin", icon: <FaUniversity /> },
+  { name: "Dashboard", path: "/admin", icon: <IoHome /> },
   { name: "Admissions", path: "/admin/admissions", icon: <FaUniversity /> },
   { name: "Announcements", path: "/admin/announcements", icon: <FaBullhorn /> },
   { name: "Departments", path: "/admin/departments", icon: <AccountTreeIcon/> },
@@ -26,6 +28,8 @@ const menuItems = [
 ];
 
 const Sidebar = ({ isOpen }) => {
+  // If you want to redirect when not logged in, handle it elsewhere (e.g. AdminProtectWrapper)
+
   return (
     <motion.aside
       initial={{ width: 0 }}

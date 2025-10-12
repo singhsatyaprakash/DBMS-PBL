@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useContext } from "react";
+import {AdminContext} from "../../context/AdminContext";
 import {
   FaUserGraduate,
   FaChalkboardTeacher,
@@ -10,21 +10,16 @@ import {
 import Sidebar from "./Sidebar";
 import StatCard from "./StatCard";
 import NavbarAdmin from "./NavbarAdmin";
+import axios from "axios";
 
 const AdminDashboard = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [announcements, setAnnouncements] = useState([]);
-
-  // Placeholder fetch function (you’ll integrate API later)
+  const {admin}=useContext(AdminContext);
   const fetchAnnouncements = async () => {
     try {
-      // const res = await axios.get("YOUR_API_ENDPOINT_HERE");
-      // setAnnouncements(res.data);
-      setAnnouncements([
-        { id: 1, title: "New Course on Cyber Security", date: "2025-10-10" },
-        { id: 2, title: "Midterm Exam Schedule Released", date: "2025-10-05" },
-        { id: 3, title: "Library Access Hours Updated", date: "2025-10-01" },
-      ]);
+      const response=await axios.get(`${import.meta.env.VITE_BACKEND_URL}/public/get-announcements`);
+      setAnnouncements(response.data.announcements);
     } catch (err) {
       console.error("Failed to fetch announcements:", err);
     }
