@@ -13,6 +13,10 @@ router.post('/logout', adminController.adminLogout);
 //annnouncements....
 
 router.post('/add-announcement',upload.single('announcement_file'),adminController.uploadAnnouncement);
+// Update announcement (admin) - optional file upload
+router.put('/update-announcement/:id', upload.single('announcement_file'), adminController.updateAnnouncement);
+// Delete announcement (admin)
+router.delete('/delete-announcement/:id', adminController.deleteAnnouncement);
 
 //adding new course...
 router.post('/add-new-course',adminController.addNewCourse);

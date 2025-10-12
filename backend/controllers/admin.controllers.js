@@ -10,6 +10,15 @@ const path = require('path');
 const query = util.promisify(connDB.query).bind(connDB);
 const adminService = require('../services/admin.services');
 
+// Helper to extract public_id from Cloudinary URL
+const getPublicIdFromUrl = (url) => {
+    if (!url) return null;
+    const parts = url.split('/');
+    const lastPart = parts.pop();
+    const publicIdWithExtension = lastPart.split('.')[0];
+    const folder = parts.slice(parts.indexOf('upload') + 2).join('/');
+    return folder ? `${folder}/${publicIdWithExtension}` : publicIdWithExtension;
+};
 
 function generateRandomPassword(length = 8) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$';
@@ -107,7 +116,7 @@ exports.validateToken=async(req,res)=>{
 
 
 exports.uploadAnnouncement = async (req, res) => {
-    const { type, title, description } = req.body;
+    const {title,description,type} = req.body;
     let fileUrl = null;
 
     try {
@@ -132,7 +141,7 @@ exports.uploadAnnouncement = async (req, res) => {
                 description || '',
                 type || 'Others',
                 fileUrl,
-                req.user?.admin_id || 1 
+                req.user?.admin_id || 1
             ]
         );
 
@@ -149,6 +158,81 @@ exports.uploadAnnouncement = async (req, res) => {
     }
 }
 
+exports.updateAnnouncement = async (req, res) => {
+    const { id } = req.params;
+    const { title, description, type } = req.body;
+    console.log(id,title);
+    let fileUrl = null;
+
+    try {
+        const existing = await query('SELECT file_url FROM announcement WHERE announcement_id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Announcement not found." });
+        }
+        const oldFileUrl = existing[0].file_url;
+
+        if (req.file) {
+            // Upload new file to Cloudinary
+            const filePath = req.file.path.split(path.sep).join(path.posix.sep);
+            const result = await cloudinary.uploader.upload(filePath, {
+                folder: type || "Others",
+                resource_type: 'auto',
+                access_mode: "public"
+            });
+            fs.unlinkSync(req.file.path); // Delete local temp file
+            fileUrl = result.secure_url;
+
+            // If there was an old file, delete it from Cloudinary
+            if (oldFileUrl) {
+                const publicId = getPublicIdFromUrl(oldFileUrl);
+                if (publicId) {
+                    await cloudinary.uploader.destroy(publicId);
+                }
+            }
+        }
+
+        const sql = `
+            UPDATE announcement
+            SET title = ?, description = ?, type = ?
+            ${fileUrl ? ', file_url = ?' : ''}
+            WHERE announcement_id = ?
+        `;
+        const params = fileUrl ? [title, description, type, fileUrl, id] : [title, description, type, id];
+
+        await query(sql, params);
+
+        res.status(200).json({ message: "Announcement updated successfully." });
+
+    } catch (err) {
+        console.error("Update failed:", err);
+        res.status(500).json({ message: "Update failed.", error: err.message });
+    }
+};
+
+exports.deleteAnnouncement = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const results = await query('SELECT file_url FROM announcement WHERE announcement_id = ?', [id]);
+        if (results.length === 0) {
+            return res.status(404).json({ message: "Announcement not found." });
+        }
+        const fileUrl = results[0].file_url;
+
+        if (fileUrl) {
+            const publicId = getPublicIdFromUrl(fileUrl);
+            if(publicId) {
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
+
+        await query('DELETE FROM announcement WHERE announcement_id = ?', [id]);
+
+        res.status(200).json({ message: "Announcement deleted successfully." });
+    } catch (err) {
+        console.error("Delete failed:", err);
+        res.status(500).json({ message: "Delete failed.", error: err.message });
+    }
+};
 
 exports.addStudent = async (req, res) => {
     try {

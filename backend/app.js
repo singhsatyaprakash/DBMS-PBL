@@ -26,10 +26,10 @@ app.use(express.static("uploads"));
 app.use(cors());
 
 // app.use("/private",privateRoutes);
+app.use('/public',allUserRoutes);
 app.use('/admin',adminRoutes);
 app.use('/faculty',facultyRoutes);
 app.use('/student',studentRoutes);
-app.use('/',allUserRoutes);
 
 
 app.get("/check",(req,res)=>{
