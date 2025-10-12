@@ -29,6 +29,7 @@ function generateRandomPassword(length = 8) {
     return password;
 }
 
+
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -60,6 +61,40 @@ exports.adminLogin = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Server error" });
+    }
+};
+exports.getProfileWithToken = async (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "Authentication token is required." 
+        });
+    }
+
+    try {
+        const sql = 'SELECT admin_id, name, email FROM admin WHERE token = ?';
+        const results = await query(sql, [token]);
+        if (results.length > 0) {
+            const adminProfile = results[0];
+            return res.status(200).json({
+                success: true,
+                message: "Admin profile found!",
+                admin: adminProfile
+            });
+        } else {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Admin not found or token is invalid." 
+            });
+        }
+    } catch (error) {
+        console.error("Error fetching admin profile by token:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "An internal server error occurred." 
+        });
     }
 };
 
@@ -116,9 +151,9 @@ exports.validateToken=async(req,res)=>{
 
 
 exports.uploadAnnouncement = async (req, res) => {
-    const {title,description,type} = req.body;
+    const description = req.body.description ? req.body.description.replace(/[^\x20-\x7E\s]/g, '') : '';
+    const {title,type,admin_id} = req.body;
     let fileUrl = null;
-
     try {
         if (req.file) {
             // Normalize path for all OS
@@ -131,7 +166,6 @@ exports.uploadAnnouncement = async (req, res) => {
             fs.unlinkSync(req.file.path);
             fileUrl = result.secure_url;
         }
-
         // Save announcement info in DB
         await query(
             `INSERT INTO announcement (title, description, type, file_url, admin_id, created_at)
@@ -141,7 +175,7 @@ exports.uploadAnnouncement = async (req, res) => {
                 description || '',
                 type || 'Others',
                 fileUrl,
-                req.user?.admin_id || 1
+                admin_id
             ]
         );
 
@@ -161,6 +195,7 @@ exports.uploadAnnouncement = async (req, res) => {
 exports.updateAnnouncement = async (req, res) => {
     const { id } = req.params;
     const { title, description, type } = req.body;
+    //make it who uploaded only that person can edit...
     console.log(id,title);
     let fileUrl = null;
 

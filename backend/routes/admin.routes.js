@@ -9,7 +9,7 @@ const {upload}=require('../db/multer.conn');
 router.post('/login',adminController.adminLogin);
 router.post('/validate-token',adminController.validateToken);
 router.post('/logout', adminController.adminLogout);
-
+router.get('/profile-by-token',adminController.getProfileWithToken);
 //annnouncements....
 
 router.post('/add-announcement',upload.single('announcement_file'),adminController.uploadAnnouncement);
