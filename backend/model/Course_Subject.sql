@@ -10,4 +10,5 @@ CREATE TABLE Course_Subjects (
     UNIQUE(course_id, subject_id, semester)
 );
 select * from course_subjects;
+drop table Course_Subjects;
 truncate table  course_subjects;

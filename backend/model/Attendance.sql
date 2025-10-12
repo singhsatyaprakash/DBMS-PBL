@@ -11,3 +11,5 @@ CREATE TABLE Attendance (
     
     UNIQUE(student_id, faculty_subject_id, date)   -- avoid duplicate marking
 );
+TRUNCATE TABLE attendance;
+drop table attendance;

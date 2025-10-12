@@ -20,11 +20,16 @@ exports.loginStudent = async (req, res) => {
         if(!isMatch){
             return res.status(401).json({message:"Invalid credentials"});
         }
+        const studentData = {id:result[0].student_id,email:result[0].email,name:result[0].name};
         const token=jwt.sign(
-            {id:result[0].student_id,email:result[0].email,name:result[0].name},
+            studentData,
             process.env.JWT_SECRET_KEY,
             {expiresIn:'1h'}
         );
+        
+        // Save the token to the student's record in the database
+        await query("UPDATE student SET token = ? WHERE student_id = ?", [token, result[0].student_id]);
+
         return res.status(200).json({
             message:"Login successful",
             token,
@@ -32,6 +37,7 @@ exports.loginStudent = async (req, res) => {
         });
     }
     catch(err){
+        console.error("Student login error:", err);
         return res.status(500).json({message:"Server error",error:err.message});
     }
 }

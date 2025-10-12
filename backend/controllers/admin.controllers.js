@@ -54,8 +54,7 @@ exports.adminLogin = async (req, res) => {
 };
 
 exports.adminLogout = async (req, res) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+    const {token} = req.body;
 
     if (!token) {
         return res.status(401).json({ message: "No token provided." });

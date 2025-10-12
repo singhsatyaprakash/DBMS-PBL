@@ -8,6 +8,12 @@ const {upload}=require('../db/multer.conn');
 
 router.post('/login',adminController.adminLogin);
 router.post('/validate-token',adminController.validateToken);
+router.post('/logout', adminController.adminLogout);
+
+//adding new course...
+router.post('/add-new-course',adminController.addNewCourse);
+router.get('/get-all-courses', adminController.getAllCourses);
+
 
 router.post('/add-student', adminController.addStudent);
 router.post('/add-bulk-student',upload.single('file'),adminController.addBulkStudent);
@@ -16,9 +22,6 @@ router.post('/add-bulk-student',upload.single('file'),adminController.addBulkStu
 
 router.post('/add-announcement',upload.single('announcement_file'),adminController.uploadAnnouncement);
 
-//adding new course...
-router.post('/add-new-course',adminController.addNewCourse);
-router.get('/get-all-courses', adminController.getAllCourses);
 //adding branch in course...
 router.post('/add-branch',adminController.addBranch);
 router.get('/get-all-branches',adminController.getAllBranches);

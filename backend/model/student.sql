@@ -27,7 +27,7 @@ CREATE TABLE Student (
     mother_name VARCHAR(100),
     mother_contact VARCHAR(15),
     mother_occupation VARCHAR(100),
-
+	token VARCHAR(500) NULL,
     FOREIGN KEY (course_id) REFERENCES Courses(course_id) ON DELETE CASCADE,
     FOREIGN KEY (branch_id) REFERENCES Course_Branch(branch_id) ON DELETE CASCADE,
     FOREIGN KEY (section_id) REFERENCES Sections(section_id) ON DELETE SET NULL
