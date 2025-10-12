@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 const menuItems = [
+  { name: "Dashboard", path: "/admin", icon: <FaUniversity /> },
   { name: "Admissions", path: "/admin/admissions", icon: <FaUniversity /> },
   { name: "Announcements", path: "/admin/announcements", icon: <FaBullhorn /> },
   { name: "Departments", path: "/admin/departments", icon: <AccountTreeIcon/> },
