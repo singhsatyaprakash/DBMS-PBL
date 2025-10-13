@@ -15,7 +15,7 @@ delete from sections where section_id=1;
 SELECT * FROM Sections;
 
 desc sections;
-
+drop table sections;
 
 
 

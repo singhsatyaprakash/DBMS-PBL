@@ -15,3 +15,11 @@ drop table announcement;
 truncate table announcement;
 
 select * from announcement;
+
+-- Check the current character set and collation
+SHOW CREATE TABLE announcement;
+
+-- If it's not utf8mb4, update the column and the table's default
+ALTER TABLE announcement
+    MODIFY description TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

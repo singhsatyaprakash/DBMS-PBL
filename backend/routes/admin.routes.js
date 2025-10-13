@@ -10,25 +10,42 @@ router.post('/login',adminController.adminLogin);
 router.post('/validate-token',adminController.validateToken);
 router.post('/logout', adminController.adminLogout);
 router.get('/profile-by-token',adminController.getProfileWithToken);
-//annnouncements....
+router.post('/reset-password',adminController.resetPassword);
 
+//annnouncements..
 router.post('/add-announcement',upload.single('announcement_file'),adminController.uploadAnnouncement);
-// Update announcement (admin) - optional file upload
 router.put('/update-announcement/:id', upload.single('announcement_file'), adminController.updateAnnouncement);
-// Delete announcement (admin)
 router.delete('/delete-announcement/:id', adminController.deleteAnnouncement);
 
-//adding new course...
-router.post('/add-new-course',adminController.addNewCourse);
-router.get('/get-all-courses', adminController.getAllCourses);
+//department...
+router.post('/add-department',adminController.addDepartment);
+router.get('/get-all-departments',adminController.getAllDepartments);
+router.put('/update-department/:id', adminController.updateDepartment);
+router.delete('/delete-department/:id', adminController.deleteDepartment);
 
+
+//adding new course...
+router.post('/add-new-course', adminController.addNewCourse);
+router.get('/get-all-courses', adminController.getAllCourses);
+router.put('/update-course/:course_id', adminController.updateCourse);
+router.delete('/delete-course/:id', adminController.deleteCourse);
+
+//adding branch in course...
+router.post('/add-branch',adminController.addBranch);
+router.get('/get-branches/:course_id', adminController.getAllBranches);
+router.put('/update-branch/:branch_id', adminController.updateBranch);
+router.delete('/delete-branch/:branch_id', adminController.deleteBranch);
+
+//adding new faculty
+
+router.post('/add-faculty', upload.single('profileImage'), adminController.addFaculty);
+router.get('/get-all-faculty', adminController.getAllFaculty);
+router.put('/update-faculty/:email', upload.single('profileImage'), adminController.updateFaculty);
+router.delete('/delete-faculty/:email', adminController.deleteFaculty);
 
 router.post('/add-student', adminController.addStudent);
 router.post('/add-bulk-student',upload.single('file'),adminController.addBulkStudent);
 
-//adding branch in course...
-router.post('/add-branch',adminController.addBranch);
-router.get('/get-all-branches',adminController.getAllBranches);
 
 //adding new subject...
 router.post('/add-new-subject', adminController.addNewSubject);
@@ -47,15 +64,10 @@ router.post('/add-students-to-section',adminController.addStudentsToSection);
 
 
 
-//adding department...
-router.post('/add-department',adminController.addDepartment);
-router.get('/get-all-departments',adminController.getAllDepartments);
 
 
-//adding new faculty
-router.post('/add-faculty', adminController.addFaculty);
 
-router.get('/get-all-faculty',adminController.getAllFaculty);
+
 
 //assigning subject course section wise to faculty...
 router.post('/assign-course-section-subject-to-faculty',adminController.assignSubjectToFaculty);

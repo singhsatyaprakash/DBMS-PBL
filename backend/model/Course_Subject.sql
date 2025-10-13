@@ -12,3 +12,4 @@ CREATE TABLE Course_Subjects (
 select * from course_subjects;
 drop table Course_Subjects;
 truncate table  course_subjects;
+

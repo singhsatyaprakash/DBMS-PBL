@@ -20,14 +20,7 @@ const getPublicIdFromUrl = (url) => {
     return folder ? `${folder}/${publicIdWithExtension}` : publicIdWithExtension;
 };
 
-function generateRandomPassword(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-}
+
 
 
 exports.adminLogin = async (req, res) => {
@@ -98,6 +91,7 @@ exports.getProfileWithToken = async (req, res) => {
     }
 };
 
+
 exports.adminLogout = async (req, res) => {
     const {token} = req.body;
 
@@ -116,7 +110,35 @@ exports.adminLogout = async (req, res) => {
         res.status(500).json({ message: "Server error during logout." });
     }
 };
+exports.resetPassword = async (req, res) => {
+    const { admin_id, oldPassword, newPassword } = req.body;
+    if (!newPassword || !oldPassword || !admin_id) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
 
+    try {
+        
+        const result = await query("SELECT * FROM admin WHERE admin_id = ?", [admin_id]);
+
+        if (result.length === 0) {
+            return res.status(404).json({ message: "Admin not found" });
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, result[0].password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Incorrect old password" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        
+        await query("UPDATE admin SET password = ? WHERE admin_id = ?", [hashedPassword, admin_id]);
+
+        return res.status(200).json({ message: "Password updated successfully" });
+    } catch (err) {
+        return res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
 
 exports.validateToken=async(req,res)=>{
     const { token } = req.body;
@@ -266,6 +288,432 @@ exports.deleteAnnouncement = async (req, res) => {
     } catch (err) {
         console.error("Delete failed:", err);
         res.status(500).json({ message: "Delete failed.", error: err.message });
+    }
+};
+
+exports.addDepartment= async(req,res)=>{
+    const{ department_name,dept_code,hod_name,hod_email,phone,office_location,description} = req.body;
+    if(!department_name || !dept_code ){
+        return res.status(400).json({message:"Department name and code are required"});
+    }
+    try{
+        const existing=await query('SELECT * FROM Departments WHERE dept_code=?',[dept_code]);
+        if(existing.length>0){
+            return res.status(409).json({message:"Department with this code already exists"});
+        }
+        await query(
+            `INSERT INTO Departments (department_name, dept_code, hod_name, hod_email, phone, office_location, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [department_name, dept_code, hod_name || null, hod_email || null, phone || null, office_location || null, description || null]
+        );
+        res.status(201).json({message:"Department added successfully"});
+    }
+    catch(err){
+        return res.status(500).json({message:"server error",error:err.message});
+    }
+}
+exports.updateDepartment = async (req, res) => {
+    const { id } = req.params;
+    const { department_name, dept_code, hod_name, hod_email, phone, office_location, description } = req.body;
+
+    if (!id) {
+        return res.status(400).json({ message: "Department ID is required" });
+    }
+
+    try {
+        const existing = await query("SELECT * FROM Departments WHERE department_id = ?", [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Department not found" });
+        }
+
+        // Prevent duplicate dept_code (if changed)
+        if (dept_code) {
+            const duplicate = await query("SELECT * FROM Departments WHERE dept_code = ? AND department_id != ?", [dept_code, id]);
+            if (duplicate.length > 0) {
+                return res.status(409).json({ message: "Another department with this code already exists" });
+            }
+        }
+
+        await query(
+            `UPDATE Departments 
+             SET department_name = ?, 
+                 dept_code = ?, 
+                 hod_name = ?, 
+                 hod_email = ?, 
+                 phone = ?, 
+                 office_location = ?, 
+                 description = ?
+             WHERE department_id = ?`,
+            [department_name, dept_code, hod_name, hod_email, phone, office_location, description, id]
+        );
+
+        return res.status(200).json({ message: "Department updated successfully" });
+    } 
+    catch (err) {
+        return res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+exports.deleteDepartment = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: "Department ID is required" });
+    }
+
+    try {
+        const existing = await query("SELECT * FROM Departments WHERE department_id = ?", [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Department not found" });
+        }
+
+        await query("DELETE FROM Departments WHERE department_id = ?", [id]);
+
+        return res.status(200).json({ message: "Department deleted successfully" });
+    } 
+    catch (err) {
+        return res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+
+exports.getAllDepartments=async(req,res)=>{
+    try{
+        const departments=await query("SELECT * FROM Departments");
+        if(departments.length==0){
+            return res.status(404).json({message:"No departments found"});
+        }
+        return res.status(200).json(departments);
+    }
+    catch(err){
+        return res.status(500).json({message:"Server error",error:err.message});
+    }
+}
+
+// Add new course
+
+exports.addNewCourse = async (req, res) => {
+    const { course_name, course_code, department, duration_years, total_semesters, branches } = req.body
+
+    try {
+        //Insert course details first...
+        const courseResult = await query(
+            'INSERT INTO Courses (course_name, course_code, department, duration_years, total_semesters) VALUES (?, ?, ?, ?, ?)',
+            [course_name, course_code, department, duration_years, total_semesters]
+        );
+
+        //Get the ID of the course you just created.
+        const newCourseId = courseResult.insertId;
+
+        //If there are branches, loop through and insert them using the new course ID.
+        if (branches && branches.length > 0) {
+            for (const branch of branches) {
+                await query(
+                    'INSERT INTO Course_Branch (branch_name, description, course_id) VALUES (?, ?, ?)',
+                    [branch.branch_name, branch.description || null, newCourseId]
+                );
+            }
+        }
+        
+        // If everything was successful, commit the transaction.
+        // await connection.commit();
+        res.status(201).json({ message: "Course and branches added successfully", courseId: newCourseId });
+
+    } catch (err) {
+        // If anything fails, roll back all changes.
+        // await connection.rollback();
+        console.error("Error adding new course:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
+    } finally {
+        // Release the database connection.
+        // if (connection) connection.release();
+    }
+};
+
+exports.getAllCourses = async (req, res) => {
+    try {
+        const courses = await query('SELECT * FROM Courses');
+        if (courses.length === 0) {
+            return res.status(404).json({ message: "No courses found" });
+        }
+        res.status(200).json(courses);
+    } catch (error) {
+        console.error("Error fetching courses:", error);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+exports.updateCourse = async (req, res) => {
+    const { course_id } = req.params;
+    const { course_name, course_code, department, duration_years, total_semesters, branches } = req.body;
+
+    try {
+        await query(
+            'UPDATE Courses SET course_name=?, course_code=?, department=?, duration_years=?, total_semesters=? WHERE course_id=?',
+            [course_name, course_code, department, duration_years, total_semesters, course_id]
+        );
+        const existingBranches = await query('SELECT branch_id FROM Course_Branch WHERE course_id = ?', [course_id]);
+        const existingBranchIds = existingBranches.map(b => b.branch_id);
+
+        const incomingBranchIds = branches.map(b => b.branch_id).filter(id => id);
+
+        // Branches that exist in the DB but not in the submitted form data.
+        const branchesToDelete = existingBranchIds.filter(id => !incomingBranchIds.includes(id));
+        if (branchesToDelete.length > 0) {
+            await query('DELETE FROM Course_Branch WHERE branch_id IN (?)', [branchesToDelete]);
+        }
+
+        //UPDATE existing branches and INSERT new ones.
+        for (const branch of branches) {
+            if (branch.branch_id) {
+                await query(
+                    'UPDATE Course_Branch SET branch_name = ?, description = ? WHERE branch_id = ?',
+                    [branch.branch_name, branch.description || null, branch.branch_id]
+                );
+            } else {
+                await query(
+                    'INSERT INTO Course_Branch (branch_name, description, course_id) VALUES (?, ?, ?)',
+                    [branch.branch_name, branch.description || null, course_id]
+                );
+            }
+        }
+        
+        // If all queries were successful:
+        // await connection.commit();
+        res.status(200).json({ message: "Course updated successfully" });
+
+    } catch (err) {
+        // If any query fails, roll back all changes.
+        // await connection.rollback();
+        console.error("Error updating course:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
+    } finally {
+        // Release the connection back to the pool.
+        // if (connection) connection.release();
+    }
+};
+
+
+exports.deleteCourse = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const existing = await query('SELECT * FROM Courses WHERE course_id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Course not found" });
+        }
+
+        await query('DELETE FROM Courses WHERE course_id = ?', [id]);
+
+        res.status(200).json({ message: "Course deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting course:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+exports.addBranch=async(req,res)=>{
+    const {branch_name,course_id,description}=req.body;
+    if(!branch_name ||!course_id){
+        return res.status(400).json({message:"Branch name and course ID are required"});
+    }
+    try{
+        const existing =await query('SELECT * FROM Course_Branch WHERE branch_name=? AND course_id=?',[branch_name, course_id]);
+        if(existing.length>0){
+            return res.status(499).json({ message: "Branch already exists for this course" });
+        }
+        await query('INSERT INTO Course_Branch (branch_name, course_id, description) VALUES (?, ?, ?)',
+            [branch_name, course_id, description || null]
+        );
+        res.status(201).json({ message: "Branch added successfully" });
+    }
+    catch(err){
+        console.error("Error adding branch:",err);
+        return res.status(500).json({message:"Server error",error:err.message});
+    }
+};
+
+exports.getAllBranches=async(req,res)=>{
+    const {course_id}=req.params;
+    try{
+        const branches= await query('Select * from Course_Branch where course_id=?',[course_id]);
+        if(branches.length===0){
+            return res.status(404).json({message:"No branches found"});
+        }
+        res.status(200).json(branches);
+    }
+    catch(err){
+        return res.status(500).json({message:"Server Error",error:err.message});
+    }
+}
+exports.updateBranch = async (req, res) => {
+    const { branch_id } = req.params;
+    const { branch_name, description } = req.body;
+
+    if (!branch_name) {
+        return res.status(400).json({ message: "Branch name is required" });
+    }
+
+    try {
+        const result = await query(
+            'UPDATE Course_Branch SET branch_name = ?, description = ? WHERE branch_id = ?',
+            [branch_name, description || null, branch_id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Branch not found" });
+        }
+
+        res.status(200).json({ message: "Branch updated successfully" });
+    } catch (err) {
+        console.error("Error updating branch:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+
+exports.deleteBranch = async (req, res) => {
+    const { branch_id } = req.params;
+
+    try {
+        const result = await query('DELETE FROM Course_Branch WHERE branch_id = ?', [branch_id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Branch not found" });
+        }
+
+        res.status(200).json({ message: "Branch deleted successfully" });
+    } catch (err) {
+        console.error("Error deleting branch:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+
+function generateRandomPassword(length = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+//adding faculty...
+exports.addFaculty = async (req, res) => {
+    const { name, department_id, email, dob, contact_number, address, gender, designation, degree } = req.body;
+    if (!name || !email || !department_id) {
+        return res.status(400).json({ message: "Name, email, and department are required" });
+    }
+
+    let profileImageUrl = null;
+
+    try {
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "faculty_profiles",
+                resource_type: 'auto'
+            });
+            fs.unlinkSync(req.file.path);
+            profileImageUrl = result.secure_url;
+        }
+        const existing = await query('SELECT * FROM Faculty WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(409).json({ message: "Faculty with this email already exists" });
+        }
+        const password = generateRandomPassword(8);
+        const mailSendDetails = await adminService.sendCredentials(email, name, password, "Faculty Member");
+        if (!mailSendDetails.success) {
+            return res.status(500).json({ message: "Error sending email", error: mailSendDetails.error });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        
+        await query(
+            `INSERT INTO Faculty (name, department_id, email, password, dob, contact_number, address, gender, designation, degree, profile_image_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, department_id, email, hashedPassword, dob, contact_number, address, gender, designation, degree, profileImageUrl]
+        );
+
+        res.status(201).json({ message: "Faculty added successfully" });
+
+    } catch (error) {
+        console.error("Error adding faculty:", error);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ message: "Server error during faculty creation." });
+    }
+};
+
+
+
+exports.updateFaculty = async (req, res) => {
+    const { email } = req.params;
+    const { name, department_id, dob, contact_number, address, gender, designation, degree } = req.body;
+
+    if (!name || !department_id) {
+        return res.status(400).json({ message: "Name and department are required" });
+    }
+
+    try {
+        const existing = await query('SELECT * FROM Faculty WHERE email = ?', [email]);
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Faculty not found" });
+        }
+
+        let finalProfileImageUrl = existing[0].profile_image_url;
+
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "faculty_profiles",
+                resource_type: 'auto'
+            });
+            fs.unlinkSync(req.file.path);
+            finalProfileImageUrl = result.secure_url;
+            
+        }
+
+        await query(
+            `UPDATE Faculty 
+             SET name = ?, department_id = ?, dob = ?, contact_number = ?, address = ?, gender = ?, designation = ?, degree = ?, profile_image_url = ?
+             WHERE email = ?`,
+            [name, department_id, dob, contact_number, address, gender, designation, degree, finalProfileImageUrl, email]
+        );
+
+        res.status(200).json({ message: "Faculty updated successfully" });
+
+    } catch (error) {
+        console.error("Error updating faculty:", error);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+
+exports.getAllFaculty = async (req, res) => {
+    try {
+        const allFaculty = await query('SELECT faculty_id, name, department_id, email, dob, contact_number, address, gender, designation, degree, profile_image_url FROM Faculty');
+        res.status(200).json(allFaculty);
+    } catch (error) {
+        console.error("Error fetching faculty:", error);
+        res.status(500).json({ message: "Server error while fetching faculty" });
+    }
+};
+
+exports.deleteFaculty = async (req, res) => {
+    const { email } = req.params;
+    try {
+        const existing = await query('SELECT * FROM Faculty WHERE email = ?', [email]);
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Faculty not found" });
+        }
+
+        await query('DELETE FROM Faculty WHERE email = ?', [email]);
+        res.status(200).json({ message: "Faculty deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting faculty:", error);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -479,79 +927,9 @@ exports.addBulkStudent = async (req, res) => {
 
 
 
-exports.addNewCourse = async (req, res) => {
-    
-    const { course_name, duration_years, department, course_code, description } = req.body;
 
-    if (!course_name || !course_code || !duration_years) {
-        return res.status(400).json({ message: "Course name, code, and duration (years) are required" });
-    }
-    const total_semesters = duration_years * 2;
-    try {
-        const existing = await query('SELECT * FROM Courses WHERE course_code = ?', [course_code]);
-        if (existing.length > 0) {
-            return res.status(409).json({ message: "Course with this code already exists" });
-        }
-        await query(
-            `INSERT INTO Courses (course_name, duration_years, total_semesters, department, course_code, description)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [course_name, duration_years, total_semesters, department || null, course_code, description || null]
-        );
 
-        res.status(201).json({ message: "Course added successfully" });
-    } catch (error) {
-        console.error("Error adding course:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-};
 
-exports.getAllCourses=async(req,res)=>{
-    try{
-        //console.log("Fetching all courses");
-        const courses=await query('SELECT * FROM Courses');
-        if(courses.length===0){
-            return res.status(404).json("No courses found");
-        }
-        res.status(200).json(courses);
-    }
-    catch(error){
-        console.error("Error fetching courses:", error);
-        return res.status(500).json({ message: "Server error" });
-    }
-}
-
-exports.addBranch=async(req,res)=>{
-    const {branch_name,course_id,description}=req.body;
-    if(!branch_name ||!course_id){
-        return res.status(400).json({message:"Branch name and course ID are required"});
-    }
-    try{
-        const existing =await query('SELECT * FROM Course_Branch WHERE branch_name=? AND course_id=?',[branch_name, course_id]);
-        if(existing.length>0){
-            return res.status(499).json({ message: "Branch already exists for this course" });
-        }
-        await query('INSERT INTO Course_Branch (branch_name, course_id, description) VALUES (?, ?, ?)',
-            [branch_name, course_id, description || null]
-        );
-        res.status(201).json({ message: "Branch added successfully" });
-    }
-    catch(err){
-        console.error("Error adding branch:",err);
-        return res.status(500).json({message:"Server error",error:err.message});
-    }
-}
-exports.getAllBranches=async(req,res)=>{
-    try{
-        const branches= await query('Select * from Course_Branch');
-        if(branches.length===0){
-            return res.status(404).json({message:"No branches found"});
-        }
-        res.status(200).json(branches);
-    }
-    catch(err){
-        return res.status(500).json({message:"Server Error",error:err.message});
-    }
-}
 
 exports.addNewSubject=async(req,res)=>{
     const {subject_name,subject_code,course,credits,description}=req.body;
@@ -682,73 +1060,7 @@ exports.addStudentsToSection = async (req, res) => {
     }
 };
 
-exports.addDepartment= async(req,res)=>{
-    const{ department_name,dept_code,hod_name,hod_email,phone,office_location,description} = req.body;
-    if(!department_name || !dept_code ){
-        return res.status(400).json({message:"Department name and code are required"});
-    }
-    try{
-        const existing=await query('SELECT * FROM Departments WHERE dept_code=?',[dept_code]);
-        if(existing.length>0){
-            return res.status(409).json({message:"Department with this code already exists"});
-        }
-        await query(
-            `INSERT INTO Departments (department_name, dept_code, hod_name, hod_email, phone, office_location, description)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [department_name, dept_code, hod_name || null, hod_email || null, phone || null, office_location || null, description || null]
-        );
-        res.status(201).json({message:"Department added successfully"});
-    }
-    catch(err){
-        return res.status(500).json({message:"server error",error:err.message});
-    }
-}
 
-exports.getAllDepartments=async(req,res)=>{
-    try{
-        const departments=await query("SELECT * FROM Departments");
-        if(departments.length==0){
-            return res.status(404).json({message:"No departments found"});
-        }
-        return res.status(200).json(departments);
-    }
-    catch(err){
-        return res.status(500).json({message:"Server error",error:err.message});
-    }
-}
-
-//adding faculty...
-exports.addFaculty=async(req,res)=>{
-    const {name,department_id,email,dob,contact_number,address,gender}=req.body;
-    if(!name || !email){
-        return res.status(400).json({ message: "Name and email are required" });
-    }
-    
-
-    try {
-        const existing = await query('SELECT * FROM Faculty WHERE email = ?', [email]);
-        if (existing.length > 0) {
-            return res.status(409).json({ message: "Faculty with this email already exists" });
-        }
-        const password = generateRandomPassword();
-        // Send credentials to faculty email
-        const mailSendDetails = await adminService.sendCredentials(email, name, password,"Faculty Member");
-        if (!mailSendDetails.success) {
-            return res.status(500).json({ message: "Error sending email", error: mailSendDetails.error });
-        }
-        const hashedPassword = await bcrypt.hash(mailSendDetails.password, 10);
-        await query(
-            `INSERT INTO Faculty (name, department_id, email, password, dob, contact_number, address, gender)
-             VALUES (?, ? , ?, ?, ?, ?, ?, ?)`,
-            [name, department_id, email,hashedPassword, dob, contact_number, address, gender]
-        );
-
-        res.status(201).json({ message: "Faculty added successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-};
 exports.getAllFaculty=async(req,res)=>{
     try{
 

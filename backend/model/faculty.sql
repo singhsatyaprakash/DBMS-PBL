@@ -10,6 +10,13 @@ CREATE TABLE Faculty (
     address TEXT,
     gender VARCHAR(10)
 );
+ALTER TABLE Faculty ADD COLUMN profile_image_url VARCHAR(255);
+
+ALTER TABLE Faculty
+ADD COLUMN designation VARCHAR(100),
+ADD COLUMN degree VARCHAR(100);
+
+
 DROP TABLE FACULTY;
 truncate table faculty; 
 select * from faculty;
