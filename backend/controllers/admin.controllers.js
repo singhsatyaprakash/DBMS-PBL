@@ -374,7 +374,23 @@ exports.deleteDepartment = async (req, res) => {
         return res.status(500).json({ message: "Server error", error: err.message });
     }
 };
+exports.getDepartment = async (req, res) => {
+    const { department_id } = req.params;
+    console.log("Hitting");
+    try {
+        const department = await query('SELECT * FROM Departments WHERE department_id = ?', [department_id]);
 
+        if (department.length === 0) {
+            return res.status(404).json({ message: "Department not found" });
+        }
+
+        res.status(200).json(department[0]);
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
 exports.getAllDepartments=async(req,res)=>{
     try{
         const departments=await query("SELECT * FROM Departments");
@@ -389,7 +405,6 @@ exports.getAllDepartments=async(req,res)=>{
 }
 
 // Add new course
-
 exports.addNewCourse = async (req, res) => {
     const { course_name, course_code, department, duration_years, total_semesters, branches } = req.body
 
@@ -441,7 +456,6 @@ exports.getAllCourses = async (req, res) => {
     }
 };
 
-
 exports.updateCourse = async (req, res) => {
     const { course_id } = req.params;
     const { course_name, course_code, department, duration_years, total_semesters, branches } = req.body;
@@ -492,7 +506,6 @@ exports.updateCourse = async (req, res) => {
     }
 };
 
-
 exports.deleteCourse = async (req, res) => {
     const { id } = req.params;
 
@@ -532,7 +545,6 @@ exports.addBranch=async(req,res)=>{
         return res.status(500).json({message:"Server error",error:err.message});
     }
 };
-
 exports.getAllBranches=async(req,res)=>{
     const {course_id}=req.params;
     try{
@@ -570,7 +582,6 @@ exports.updateBranch = async (req, res) => {
         return res.status(500).json({ message: "Server error", error: err.message });
     }
 };
-
 exports.deleteBranch = async (req, res) => {
     const { branch_id } = req.params;
 
@@ -642,9 +653,6 @@ exports.addFaculty = async (req, res) => {
         res.status(500).json({ message: "Server error during faculty creation." });
     }
 };
-
-
-
 exports.updateFaculty = async (req, res) => {
     const { email } = req.params;
     const { name, department_id, dob, contact_number, address, gender, designation, degree } = req.body;
@@ -688,9 +696,6 @@ exports.updateFaculty = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
-
-
-
 exports.getAllFaculty = async (req, res) => {
     try {
         const allFaculty = await query('SELECT faculty_id, name, department_id, email, dob, contact_number, address, gender, designation, degree, profile_image_url FROM Faculty');
@@ -700,7 +705,6 @@ exports.getAllFaculty = async (req, res) => {
         res.status(500).json({ message: "Server error while fetching faculty" });
     }
 };
-
 exports.deleteFaculty = async (req, res) => {
     const { email } = req.params;
     try {
@@ -717,6 +721,8 @@ exports.deleteFaculty = async (req, res) => {
     }
 };
 
+
+//adding students...
 exports.addStudent = async (req, res) => {
     try {
         const {
@@ -725,6 +731,7 @@ exports.addStudent = async (req, res) => {
             course_id,
             branch_id,
             section_id,
+            department_id,
             semester,
             year,
             dob,
@@ -741,13 +748,11 @@ exports.addStudent = async (req, res) => {
             mother_occupation
         } = req.body;
 
-        
         const lastStudent = await query("SELECT MAX(university_id) AS maxUniId FROM Student");
         let university_id = "10001";
         if (lastStudent[0].maxUniId) {
             university_id = (parseInt(lastStudent[0].maxUniId) + 1).toString().padStart(5, "0");
         }
-
         
         const lastRoll = await query("SELECT MAX(roll_no) AS maxRoll FROM Student");
         let newRollNo = "20001";
@@ -765,18 +770,19 @@ exports.addStudent = async (req, res) => {
             });
         }
         const hashedPassword = await bcrypt.hash(mailSendDetails.password, 10);
+        
         const result = await query(
             `INSERT INTO Student (
                 university_id, name, email, password, roll_no,
-                course_id, branch_id, section_id,
+                course_id, branch_id, section_id, department_id,
                 semester, year, dob, gender,
                 nationality, blood_group, contact, address,
                 father_name, father_contact, father_occupation,
                 mother_name, mother_contact, mother_occupation
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 university_id, name, email, hashedPassword, newRollNo,
-                course_id, branch_id || null, section_id || null,
+                course_id, branch_id || null, section_id || null, department_id,
                 semester, year, dob, gender,
                 nationality, blood_group, contact, address,
                 father_name, father_contact, father_occupation,
@@ -800,6 +806,13 @@ exports.addStudent = async (req, res) => {
 
     } catch (err) {
         console.error(err);
+        if (err.code === 'ER_NO_DEFAULT_FOR_FIELD') {
+             return res.status(400).json({
+                success: false,
+                message: "Database error: 'department_id' is a required field and was not provided.",
+                error: err.message
+            });
+        }
         res.status(500).json({
             success: false,
             message: "Error adding student",
@@ -807,7 +820,6 @@ exports.addStudent = async (req, res) => {
         });
     }
 };
-
 
 exports.addBulkStudent = async (req, res) => {
     try {
@@ -818,27 +830,27 @@ exports.addBulkStudent = async (req, res) => {
         const students = await adminService.parseStudentFile(req.file.path);
 
         const requiredFields = [
-            'name', 'email', 'course_id', 'semester', 'year',
-            'dob', 'gender', 'contact', 'address'
+            'name', 'email', 'course_id', 'department_id',
+            'semester', 'year', 'dob', 'gender', 'contact', 'address'
         ];
 
         for (const student of students) {
             for (const field of requiredFields) {
                 if (!student[field]) {
                     return res.status(400).json({
-                        message: `Missing field ${field} in some record`
+                        message: `Missing required field '${field}' in the record for email: ${student.email || 'N/A'}`
                     });
                 }
             }
         }
-        console.log("all okay");
+        
         const values = [];
         let failedEmails = [];
 
         const [lastIds] = await query(`
             SELECT 
-                COALESCE(MAX(CAST(roll_no AS UNSIGNED)), 0) AS last_roll,
-                COALESCE(MAX(CAST(university_id AS UNSIGNED)), 0) AS last_univ
+                COALESCE(MAX(CAST(roll_no AS UNSIGNED)), 20000) AS last_roll,
+                COALESCE(MAX(CAST(university_id AS UNSIGNED)), 10000) AS last_univ
             FROM Student
         `);
 
@@ -847,18 +859,13 @@ exports.addBulkStudent = async (req, res) => {
 
         for (const s of students) {
             const password = generateRandomPassword();
-
-            // Send email with credentials
-            const mailSendDetails = await adminService.sendCredentials(
-                s.email, s.name, password, "Student"
-            );
+            const mailSendDetails = await adminService.sendCredentials(s.email, s.name, password, "Student");
             if (!mailSendDetails.success) {
                 failedEmails.push({ email: s.email, error: mailSendDetails.error });
-                continue; // Skip this student if email fails
+                continue;
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-
             
             rollCounter++;
             univCounter++;
@@ -872,13 +879,14 @@ exports.addBulkStudent = async (req, res) => {
                 hashedPassword,
                 roll_no,
                 s.course_id,
-                s.branch_id,
+                s.branch_id || null,
                 s.section_id || null,
+                s.department_id,
                 s.semester,
                 s.year,
                 s.dob,
                 s.gender,
-                s.nationality || null,
+                s.nationality || 'Indian',
                 s.blood_group || null,
                 s.contact,
                 s.address,
@@ -893,7 +901,7 @@ exports.addBulkStudent = async (req, res) => {
 
         if (values.length === 0) {
             return res.status(500).json({
-                message: "No students added. All emails failed.",
+                message: "No students to add. All email attempts may have failed.",
                 failedEmails
             });
         }
@@ -901,7 +909,7 @@ exports.addBulkStudent = async (req, res) => {
         const sql = `
             INSERT INTO Student
             (university_id, name, email, password, roll_no,
-             course_id, branch_id, section_id,
+             course_id, branch_id, section_id, department_id,
              semester, year, dob, gender,
              nationality, blood_group, contact, address,
              father_name, father_contact, father_occupation,
@@ -919,16 +927,166 @@ exports.addBulkStudent = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "An unexpected error occurred during the bulk upload.", error: error.message });
     }
 };
 
+exports.getAllStudents = async (req, res) => {
+    try {
+        const { course_id } = req.query;
 
+        let sql = `
+            SELECT
+                s.student_id, s.university_id, s.name, s.email, s.roll_no,
+                s.contact, s.year, s.semester, c.course_name, cb.branch_name
+            FROM Student s
+            LEFT JOIN Courses c ON s.course_id = c.course_id
+            LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
+        `;
+        const params = [];
 
+        if (course_id) {
+            sql += " WHERE s.course_id = ?";
+            params.push(course_id);
+        }
 
+        sql += " ORDER BY s.name ASC";
 
+        const students = await query(sql, params);
 
+        res.status(200).json({
+            success: true,
+            count: students.length,
+            data: students
+        });
 
+    } catch (err) {
+        console.error("Error fetching students:", err);
+        res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    }
+};
+
+exports.getStudentById = async (req, res) => {
+    try {
+        const { student_id } = req.params;
+
+        const sql = `
+            SELECT 
+                s.*, 
+                c.course_name,
+                cb.branch_name,
+                sec.section_name,
+                d.department_name
+            FROM Student s
+            LEFT JOIN Courses c ON s.course_id = c.course_id
+            LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
+            LEFT JOIN Sections sec ON s.section_id = sec.section_id
+            LEFT JOIN Departments d ON s.department_id = d.department_id
+            WHERE s.student_id = ?
+        `;
+        
+        const [student] = await query(sql, [student_id]);
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        
+        delete student.password; 
+
+        res.status(200).json({ success: true, data: student });
+
+    } catch (err) {
+        console.error("Error fetching student:", err);
+        res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    }
+};
+
+exports.updateStudent = async (req, res) => {
+    const { student_id } = req.params;
+
+    try {
+        const [existingStudent] = await query("SELECT profile_image_url FROM Student WHERE student_id = ?", [student_id]);
+
+        if (!existingStudent) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(404).json({ success: false, message: "Student not found" });
+        }
+
+        let newImageUrl = null;
+        if (req.file) {
+            if (existingStudent.profile_image_url) {
+                const publicId = getPublicIdFromUrl(existingStudent.profile_image_url);
+                if (publicId) {
+                    await cloudinary.uploader.destroy(publicId);
+                }
+            }
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'student-profiles',
+                resource_type: 'image'
+            });
+            newImageUrl = result.secure_url;
+            fs.unlinkSync(req.file.path);
+        }
+        
+        const updateData = { ...req.body };
+        if (newImageUrl) {
+            updateData.profile_image_url = newImageUrl;
+        }
+
+        delete updateData.student_id;
+        delete updateData.university_id;
+        delete updateData.roll_no;
+        delete updateData.email;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ success: false, message: "No fields provided for update." });
+        }
+
+        const result = await query("UPDATE Student SET ? WHERE student_id = ?", [updateData, student_id]);
+
+        if (result.affectedRows === 0) {
+             return res.status(404).json({ success: false, message: "Student not found or data was unchanged." });
+        }
+
+        res.status(200).json({ success: true, message: "Student updated successfully." });
+
+    } catch (err) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        console.error("Error updating student:", err);
+        res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    }
+};
+
+exports.deleteStudent = async (req, res) => {
+    try {
+        const { student_id } = req.params;
+
+        const [student] = await query("SELECT profile_image_url FROM Student WHERE student_id = ?", [student_id]);
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        if (student.profile_image_url) {
+            const publicId = getPublicIdFromUrl(student.profile_image_url);
+            if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
+
+        const result = await query("DELETE FROM Student WHERE student_id = ?", [student_id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Student could not be deleted' });
+        }
+
+        res.status(200).json({ success: true, message: 'Student deleted successfully ✅' });
+
+    } catch (err) {
+        console.error("Error deleting student:", err);
+        res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    }
+};
 
 
 exports.addNewSubject=async(req,res)=>{
@@ -954,13 +1112,14 @@ exports.addNewSubject=async(req,res)=>{
         res.status(500).json({ message: "Server error" });
     }
 }
+
 exports.getAllSubjects=async(req,res)=>{
     try{
         const subjects=await query('SELECT * FROM Subjects');
         if(subjects.length===0){
             return res.status(404).json("No subjects found");
         }
-        res.status(200).json(subjects); 
+        res.status(200).json(subjects);
     }
     catch(error){
         return res.status(500).json({message:"server error",error:error.message});
@@ -1059,7 +1218,6 @@ exports.addStudentsToSection = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
-
 
 exports.getAllFaculty=async(req,res)=>{
     try{

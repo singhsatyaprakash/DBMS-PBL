@@ -20,6 +20,7 @@ router.delete('/delete-announcement/:id', adminController.deleteAnnouncement);
 //department...
 router.post('/add-department',adminController.addDepartment);
 router.get('/get-all-departments',adminController.getAllDepartments);
+router.get('/get-department/:department_id',adminController.getDepartment);
 router.put('/update-department/:id', adminController.updateDepartment);
 router.delete('/delete-department/:id', adminController.deleteDepartment);
 
@@ -45,6 +46,11 @@ router.delete('/delete-faculty/:email', adminController.deleteFaculty);
 
 router.post('/add-student', adminController.addStudent);
 router.post('/add-bulk-student',upload.single('file'),adminController.addBulkStudent);
+router.get('/students', adminController.getAllStudents);
+router.get('/student/:student_id', adminController.getStudentById);
+router.put('/student/:student_id', upload.single('profile_image'), adminController.updateStudent);
+router.delete('/student/:student_id', adminController.deleteStudent);
+
 
 
 //adding new subject...
