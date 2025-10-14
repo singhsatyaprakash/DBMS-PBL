@@ -12,7 +12,7 @@ ADD COLUMN role VARCHAR(50) DEFAULT 'admin';
 desc admin;
 
 select * from admin;
-delete from admin where admin_id=3;
+delete from admin where admin_id=5;
 drop table admin;
 
 
