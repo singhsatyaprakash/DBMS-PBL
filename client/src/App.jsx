@@ -15,10 +15,13 @@ import Result from './Pages/AdminPages/Result'
 import Library from './Pages/AdminPages/Library'
 import ChangePassword from './component/ChangePassword'
 import AdminProfile from './Pages/AdminPages/AdminProfile'
+
 import AdminLayout from './Pages/AdminPages/Layout';
 import StudentLayout from './Pages/StudentPages/StudentLayout';
 import AcademicLayout from './Pages/StudentPages/AcademicLayout';
 import ExamLayout from './Pages/StudentPages/ExamLayout';
+import FacultyLayout from './Pages/FacultyPages/FacultyLayout.jsx';
+
 import StudentDashboard from './Pages/StudentPages/StudentDashboard';
 import Circulars from './Pages/StudentPages/circulars';
 
@@ -33,15 +36,24 @@ import StudentResult from './Pages/StudentPages/Result';
 import AdmitCard from './Pages/StudentPages/AdmitCard';
 import BackExam from './Pages/StudentPages/BackExam';
 
+
+import FacultyDashboard from './Pages/FacultyPages/FacultyDashboard.jsx';
+import Schedule from './Pages/FacultyPages/Schedule.jsx';
+import TakeAttendance from './Pages/FacultyPages/TakeAttendance.jsx';
+import FacultyCirculars from './Pages/FacultyPages/FacultyCirculars.jsx';
+
 // --- Placeholder pages for routes not yet created ---
 const AcademicHomePage = () => <div className="p-4 text-slate-600">Please select an option from the Academic Menu.</div>;
 const FeePage = () => <div className="p-6">Fee Payment Page Content</div>;
+const FacultyLoginPage = () => <div className="p-6">Faculty Login Page</div>;
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/faculty/login" element={<FacultyLoginPage />} />
+
         <Route path='/admin/profile' element={<AdminProtectWrapper><AdminProfile/></AdminProtectWrapper>} />
         <Route path="/admin" element={<AdminProtectWrapper><AdminDashboard /></AdminProtectWrapper>} />
         <Route path="/admin/changepassword" element={<AdminProtectWrapper><ChangePassword /></AdminProtectWrapper>} />
@@ -55,7 +67,8 @@ const App = () => {
         <Route path="/admin/result" element={<AdminProtectWrapper><Result /></AdminProtectWrapper>} />
         <Route path="/admin/library" element={<AdminProtectWrapper><Library /></AdminProtectWrapper>} />
         <Route path="/student/dashboard" element={<StudentDashboard />} />
-            <Route path="/student" element={<StudentLayout />}>
+
+        <Route path="/student" element={<StudentLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="circulars" element={<Circulars />} />
@@ -78,6 +91,18 @@ const App = () => {
             <Route path="admit-card" element={<AdmitCard />} />
             <Route path="back-exam" element={<BackExam />} />
         </Route>
+
+        <Route path="/faculty" element={<FacultyLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<FacultyDashboard />} />
+            <Route path="schedule" element={<Schedule />} />
+            <Route path="attendance" element={<TakeAttendance />} />
+            <Route path="circular" element={<FacultyCirculars />} />
+        </Route>
+
+        {/* 404 Not Found Route */}
+        <Route path="*" element={<div>404 Not Found</div>} />
+
       </Routes>
     </Router>
   )

@@ -4,6 +4,7 @@ import {
     FaUserGraduate, FaMoneyBill, FaBullhorn, FaFileSignature, 
     FaIdCard, FaEnvelope, FaPhone 
 } from 'react-icons/fa';
+import StudentNavbar from './StudentNavbar';
 
 const StudentDashboard = () => {
     
@@ -36,8 +37,9 @@ const StudentDashboard = () => {
     ];
 
     return (
+        <>
+        <StudentNavbar></StudentNavbar>
         <div className="p-4 sm:p-6 bg-slate-100 min-h-full">
-            
             {/* Main Dashboard Layout: Left Profile + Right Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -121,6 +123,7 @@ const StudentDashboard = () => {
                 </div>
             </div>
         </div>
+    </>
     );
 };
 
