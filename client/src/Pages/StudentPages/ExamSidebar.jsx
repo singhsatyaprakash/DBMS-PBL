@@ -1,6 +1,6 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { FaPoll, FaIdCard, FaHistory } from 'react-icons/fa';
+import { NavLink, Link } from 'react-router-dom';
+import { FaPoll, FaIdCard, FaHistory, FaArrowLeft } from 'react-icons/fa';
 
 const ExamSidebar = () => {
   const links = [
@@ -18,7 +18,16 @@ const ExamSidebar = () => {
 
   return (
     <div className="w-64 bg-slate-800 text-slate-200 h-full shadow-lg flex flex-col">
-      <div className="p-4 border-b border-slate-700">
+      {/* --- BACK TO DASHBOARD BUTTON --- */}
+      <Link
+        to="/student/dashboard"
+        className="flex items-center gap-3 p-4 bg-slate-900 text-white font-semibold hover:bg-slate-700 transition-colors"
+      >
+        <FaArrowLeft />
+        <span>Back to Dashboard</span>
+      </Link>
+
+      <div className="p-4 border-b border-t border-slate-700">
         <h2 className="text-xl font-bold text-white text-center">Exam Section</h2>
       </div>
       <nav className="mt-4">

@@ -36,12 +36,14 @@ const StudentDashboard = () => {
     ];
 
     return (
-        // The <StudentLayout> wrapper has been removed from here
         <div className="p-4 sm:p-6 bg-slate-100 min-h-full">
+            
+            {/* Main Dashboard Layout: Left Profile + Right Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Left Column: Profile Information */}
                 <div className="lg:col-span-1 space-y-6">
+                    {/* Profile Card */}
                     <div className="bg-blue-600 text-white p-6 rounded-xl shadow-lg text-center">
                         <img src={studentData.profileImage} alt="Student Profile" className="w-24 h-24 rounded-full mx-auto ring-4 ring-blue-400 object-cover" />
                         <h3 className="text-xl font-bold mt-4">{studentData.name}</h3>
@@ -54,27 +56,30 @@ const StudentDashboard = () => {
                             <FaIdCard /> ID Card
                         </button>
                     </div>
+
+                    {/* Detailed Info List */}
                     <div className="bg-white p-4 rounded-xl shadow-md">
                         <ul className="text-sm text-slate-700 divide-y divide-slate-200">
-                             <li className="py-2 flex justify-between items-center"><strong>Father's Name :</strong> <span>{studentData.fatherName}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>Mother's Name :</strong> <span>{studentData.motherName}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>D.O.B. :</strong> <span>{studentData.dob}</span></li>
-                             <li className="py-2 flex justify-between items-start">
-                                 <strong>Official Email :</strong> 
-                                 <span className="text-right break-all ml-2">{studentData.officialEmail}</span>
-                             </li>
-                             <li className="py-2 flex justify-between items-center"><strong>Course :</strong> <span className="font-semibold">{studentData.course}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>Year/Sem :</strong> <span>{studentData.yearSem}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>Section :</strong> <span>{studentData.section}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>Class Roll No. :</strong> <span>{studentData.classRollNo}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>Enroll No. :</strong> <span>{studentData.enrollNo}</span></li>
-                             <li className="py-2 flex justify-between items-center"><strong>University Roll No. :</strong> <span>{studentData.universityRollNo}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>Father's Name :</strong> <span>{studentData.fatherName}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>Mother's Name :</strong> <span>{studentData.motherName}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>D.O.B. :</strong> <span>{studentData.dob}</span></li>
+                            <li className="py-2 flex justify-between items-start">
+                                <strong>Official Email :</strong> 
+                                <span className="text-right break-all ml-2">{studentData.officialEmail}</span>
+                            </li>
+                            <li className="py-2 flex justify-between items-center"><strong>Course :</strong> <span className="font-semibold">{studentData.course}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>Year/Sem :</strong> <span>{studentData.yearSem}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>Section :</strong> <span>{studentData.section}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>Class Roll No. :</strong> <span>{studentData.classRollNo}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>Enroll No. :</strong> <span>{studentData.enrollNo}</span></li>
+                            <li className="py-2 flex justify-between items-center"><strong>University Roll No. :</strong> <span>{studentData.universityRollNo}</span></li>
                         </ul>
                     </div>
                 </div>
 
                 {/* Right Column: Main Content */}
                 <div className="lg:col-span-2 space-y-6">
+                    {/* Quick Links */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         {quickLinks.map(link => (
                             <Link to={link.path} key={link.title}>
@@ -88,7 +93,9 @@ const StudentDashboard = () => {
                         ))}
                     </div>
                     
+                    {/* Information Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Circular Notices Card */}
                         <div className="bg-white p-4 rounded-xl shadow-md">
                             <h4 className="font-bold text-blue-700 border-b pb-2 mb-2">Circular Notices</h4>
                             <ul className="text-sm space-y-2">
@@ -103,10 +110,12 @@ const StudentDashboard = () => {
                             </ul>
                             <button className="text-sm text-blue-600 font-semibold mt-2 hover:underline">More..</button>
                         </div>
+                        
+                        {/* Placeholder Cards */}
                         <div className="bg-white p-4 rounded-xl shadow-md">
                             <h4 className="font-bold text-blue-700 border-b pb-2 mb-2">Results</h4>
                             <p className="text-sm text-slate-500">No new results to show.</p>
-                            <button className="text-sm text-blue-600 font-semibold mt-2 hover:underline">More..</button>
+                            <button className="text-sm text-blue-600 font-semibold mt-2 hover:underline">More..</button>                               
                         </div>
                     </div>
                 </div>

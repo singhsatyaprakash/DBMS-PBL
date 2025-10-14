@@ -6,7 +6,7 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Reusable Components (No changes needed)
+// Reusable Components
 const DetailItem = ({ icon, label, value }) => (
     <div className="border-b border-slate-200 py-3">
         <p className="text-sm font-semibold text-slate-500 flex items-center gap-2">{icon} {label}</p>
@@ -43,8 +43,10 @@ const Faculty = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // *** ADDED ***: State to handle form submission process
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // *** ADDED ***: State to hold department name for the details view
+    const [detailsDepartmentName, setDetailsDepartmentName] = useState('');
 
     const initialFormData = {
         name: "", department_id: "", degree: "", designation: "", email: "", dob: "", contact_number: "", address: "", gender: "Male", profileImage: null, imageFile: null
@@ -127,10 +129,9 @@ const Faculty = () => {
         setEditingEmail(null);
     };
 
-    // *** MODIFIED ***: handleSave now uses the isSubmitting state
     const handleSave = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true); // Start submission process
+        setIsSubmitting(true); 
         
         const apiFormData = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
@@ -155,7 +156,7 @@ const Faculty = () => {
             toast.error(errorMessage);
             console.error(`Failed to save faculty:`, error);
         } finally {
-            setIsSubmitting(false); // End submission process
+            setIsSubmitting(false);
         }
     };
 
@@ -234,7 +235,20 @@ const Faculty = () => {
                                 <p className="flex items-center justify-center gap-2"><FaBuilding className="text-slate-400"/> {departmentName}</p>
                                 <p className="flex items-center justify-center gap-2 mt-1"><FaGraduationCap className="text-slate-400"/> {faculty.degree}</p>
                             </div>
-                            <button onClick={() => setShowDetails(faculty)} className="mt-4 w-full font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg transition">
+                            {/* *** MODIFIED ***: onClick is now async to fetch department details */}
+                            <button 
+                                onClick={async () => {
+                                    setShowDetails(faculty);
+                                    setDetailsDepartmentName(''); // Reset on click
+                                    try {
+                                        const res = await axios.get(`${API_BASE_URL}/get-department/${faculty.department_id}`);
+                                        setDetailsDepartmentName(res.data.department_name);
+                                    } catch (error) {
+                                        console.error("Failed to fetch department details:", error);
+                                        setDetailsDepartmentName("Unknown Department");
+                                    }
+                                }} 
+                                className="mt-4 w-full font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg transition">
                                 View Details
                             </button>
                         </motion.div>
@@ -299,7 +313,6 @@ const Faculty = () => {
                                 <input id="profileImage" name="profileImage" type="file" accept="image/*" onChange={handleInputChange} className="hidden"/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Form Inputs... */}
                                 <FormInput id="name" name="name" label="Full Name" type="text" value={formData.name} onChange={handleInputChange} required icon={<FaUser />} placeholder="e.g., Dr. Meena Sharma"/>
                                 <FormInput id="designation" name="designation" label="Designation" type="text" value={formData.designation} onChange={handleInputChange} required icon={<FaBriefcase />} placeholder="e.g., Professor"/>
                                 <div>
@@ -326,7 +339,6 @@ const Faculty = () => {
                                     <textarea id="address" name="address" value={formData.address || ''} onChange={handleInputChange} rows="3" placeholder="Enter full address" className="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"/>
                                 </div>
                             </div>
-                            {/* *** MODIFIED ***: Buttons are now aware of the submitting state */}
                             <div className="flex justify-end gap-4 pt-4">
                                 <button type="button" onClick={handleCancel} disabled={isSubmitting} className="px-5 py-2.5 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
                                     Cancel
@@ -351,9 +363,7 @@ const Faculty = () => {
             {/* Details View Panel */}
             <AnimatePresence>
                 {showDetails && (() => {
-                    const departmentName = departments.find(d => d.department_id === showDetails.department_id)?.department_name || showDetails.department_id;
                     const profileImageUrl = getProfileImageUrl(showDetails);
-
                     return (
                         <motion.div className="fixed inset-0 bg-white overflow-y-auto p-6 sm:p-10 z-50" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}>
                             <button onClick={() => setShowDetails(null)} className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-lg hover:bg-slate-200 font-semibold mb-6"><FaArrowLeft /> Back to List</button>
@@ -363,7 +373,8 @@ const Faculty = () => {
                                 <p className="text-slate-500 font-semibold">{showDetails.designation}</p>
                             </div>
                             <div className="bg-slate-50 p-6 rounded-xl border mt-6">
-                                <DetailItem icon={<FaBuilding />} label="Department" value={departmentName} />
+                                {/* *** MODIFIED ***: Uses the state variable for the department name */}
+                                <DetailItem icon={<FaBuilding />} label="Department" value={detailsDepartmentName || 'Loading...'} />
                                 <DetailItem icon={<FaGraduationCap />} label="Degree" value={showDetails.degree} />
                                 <DetailItem icon={<FaEnvelope />} label="Email" value={showDetails.email} />
                                 <DetailItem icon={<FaPhone />} label="Contact" value={showDetails.contact_number} />

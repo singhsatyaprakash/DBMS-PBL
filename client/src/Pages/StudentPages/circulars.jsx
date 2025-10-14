@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// REMOVED: import StudentLayout from './StudentLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaFileAlt, FaBullhorn } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 
 // Dummy data for announcements
 const getDummyAnnouncements = () => [
@@ -28,58 +27,82 @@ const getDummyAnnouncements = () => [
   },
 ];
 
+const getTagClasses = (type) => {
+  switch (type) {
+    case 'Exam':
+      return 'bg-blue-100 text-blue-700 border-blue-300';
+    case 'Sports':
+      return 'bg-green-100 text-green-700 border-green-300';
+    case 'Fees':
+      return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    default:
+      return 'bg-slate-100 text-slate-700 border-slate-300';
+  }
+};
+
 const Circulars = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     setAnnouncements(getDummyAnnouncements());
   }, []);
 
-  const getTagClasses = (type) => {
-    switch (type) {
-      case 'Exam': return 'bg-red-100 text-red-800 border-red-200';
-      case 'Sports': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Fees': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
-  };
-
   return (
-    // The <StudentLayout> wrapper is now removed from here
     <>
       <div className="p-6">
         <h2 className="text-3xl font-bold text-slate-800 mb-6 tracking-tight">Circulars & Announcements</h2>
-
         <div className="space-y-5">
           {announcements.map((item) => {
             const isLong = item.description.length > 200;
+            const isExpanded = expandedId === item.id;
             return (
-              <div key={item.id} className="bg-white p-5 rounded-xl shadow-md border border-slate-200">
-                <div className="flex justify-between items-start gap-4">
-                  <div>
-                    <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${getTagClasses(item.type)}`}>
-                      {item.type}
-                    </span>
-                    <h3 className="text-lg font-bold text-slate-800 mt-2">{item.title}</h3>
-                  </div>
-                  <span className="text-sm text-slate-500 font-medium whitespace-nowrap">{item.date}</span>
+              <div key={item.id} className="bg-white rounded-lg shadow p-5 border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-slate-800">{item.title}</h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTagClasses(item.type)}`}>
+                    {item.type}
+                  </span>
                 </div>
-                <p className="text-slate-600 mt-2 text-sm">
-                  {isLong ? `${item.description.substring(0, 200)}...` : item.description}
-                  {isLong && (
-                    <button onClick={() => setSelectedAnnouncement(item)} className="text-blue-600 font-semibold ml-2 hover:underline">
-                      Read More
-                    </button>
-                  )}
-                </p>
+                <div className="text-sm text-slate-600 mb-2">{item.date}</div>
+                <div className="text-slate-700">
+                  {isLong && !isExpanded
+                    ? (
+                      <>
+                        {item.description.slice(0, 200)}...
+                        <button
+                          className="ml-2 text-blue-600 hover:underline text-xs"
+                          onClick={() => setExpandedId(item.id)}
+                        >
+                          Read More
+                        </button>
+                      </>
+                    )
+                    : item.description
+                  }
+                </div>
+                {isLong && isExpanded && (
+                  <button
+                    className="mt-2 text-blue-600 hover:underline text-xs"
+                    onClick={() => setExpandedId(null)}
+                  >
+                    Show Less
+                  </button>
+                )}
+                <div className="mt-3 text-right">
+                  <button
+                    className="px-4 py-1 bg-slate-200 text-slate-800 rounded hover:bg-slate-300 text-sm"
+                    onClick={() => setSelectedAnnouncement(item)}
+                  >
+                    View Details
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* View Announcement Modal */}
       <AnimatePresence>
         {selectedAnnouncement && (
           <motion.div
@@ -115,4 +138,3 @@ const Circulars = () => {
 };
 
 export default Circulars;
-

@@ -1,7 +1,6 @@
-// Create a new file: AcademicSidebar.jsx
-
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const AcademicSidebar = () => {
   const links = [
@@ -13,16 +12,26 @@ const AcademicSidebar = () => {
 
   const activeLinkStyle = {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
     borderLeft: '4px solid white',
     paddingLeft: 'calc(1rem - 4px)', // Adjust padding to account for border
   };
 
   return (
-    <div className="w-64 bg-blue-900 text-slate-200 h-full shadow-lg">
-      <div className="p-4 border-b border-blue-800">
+    <div className="w-64 bg-blue-900 text-slate-200 h-full shadow-lg flex flex-col">
+      {/* --- BACK TO DASHBOARD BUTTON --- */}
+      <Link
+        to="/student/dashboard"
+        className="flex items-center gap-3 p-4 bg-blue-950 text-white font-semibold hover:bg-blue-800 transition-colors"
+      >
+        <FaArrowLeft />
+        <span>Back to Dashboard</span>
+      </Link>
+
+      <div className="p-4 border-b border-t border-blue-800">
         <h2 className="text-lg font-bold text-white">Academic Menu</h2>
       </div>
-      <nav className="mt-2">
+      <nav>
         <ul>
           {links.map((link) => (
             <li key={link.name}>
