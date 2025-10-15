@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // --- FIX: Added FaTimes to the import list ---
 import { FaBars, FaTimes, FaKey, FaSignOutAlt } from 'react-icons/fa';
-
+import { StudentContext } from '../../context/StudentContext';
 const StudentNavbar = ({ toggleSidebar, isSidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const {student}=useContext(StudentContext);
+  console.log(student);
 
   // Effect to close the menu if clicked outside
   useEffect(() => {

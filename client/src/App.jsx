@@ -41,6 +41,7 @@ import FacultyDashboard from './Pages/FacultyPages/FacultyDashboard.jsx';
 import Schedule from './Pages/FacultyPages/Schedule.jsx';
 import TakeAttendance from './Pages/FacultyPages/TakeAttendance.jsx';
 import FacultyCirculars from './Pages/FacultyPages/FacultyCirculars.jsx';
+import StudentProtectWrapper from './StudentProtectWrapper.jsx'
 
 // --- Placeholder pages for routes not yet created ---
 const AcademicHomePage = () => <div className="p-4 text-slate-600">Please select an option from the Academic Menu.</div>;
@@ -66,6 +67,7 @@ const App = () => {
         <Route path="/admin/exam-timetable" element={<AdminProtectWrapper><ExamTimetable /></AdminProtectWrapper>} />
         <Route path="/admin/result" element={<AdminProtectWrapper><Result /></AdminProtectWrapper>} />
         <Route path="/admin/library" element={<AdminProtectWrapper><Library /></AdminProtectWrapper>} />
+        
         <Route path="/student/dashboard" element={<StudentDashboard />} />
 
         <Route path="/student" element={<StudentLayout />}>

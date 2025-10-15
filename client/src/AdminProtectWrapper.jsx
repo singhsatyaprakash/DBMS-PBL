@@ -1,30 +1,42 @@
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdmin } from './context/useAdmin';
+import axios from 'axios';
+import { AdminContext } from './context/AdminContext';
 
 const AdminProtectWrapper = ({ children }) => {
   const navigate = useNavigate();
-
-  const { admin, loading, refresh } = useAdmin();
+  const { admin, setAdmin } = useContext(AdminContext);
 
   useEffect(() => {
-    // If there's no admin but a token exists, try to refresh profile once
+    if (admin) {
+      return;
+    }
     const adminToken = localStorage.getItem('token');
-    if (!admin && adminToken) {
-      // attempt to refresh admin profile from context
-      refresh();
-    }
-
-    if (!loading && !admin) {
-      // no admin after loading -> redirect to login
+    if (!adminToken) {
       navigate('/admin/login');
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin, loading, navigate]);
 
-  if (loading) return null; // or a spinner
+    const validateAdmin = async () => {
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/admin/validate-token`,{ token: adminToken });
 
-  return <>{children}</>;
+        if (response.status === 200) {
+          setAdmin(response.data.user);
+        } else {
+          localStorage.removeItem('token');
+          navigate('/admin/login');
+        }
+      } catch (error) {
+        console.error("Token validation failed:", error);
+        localStorage.removeItem('token');
+        navigate('/admin/login');
+      }
+    };
+
+    validateAdmin();
+  }, []);
+  return admin ? <>{children}</> : null; 
 };
 
 export default AdminProtectWrapper;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { FiRefreshCw, FiLoader, FiX } from 'react-icons/fi';
@@ -51,7 +51,6 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate=useNavigate();
-
   const generateCaptcha = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let captchaText = '';
@@ -84,7 +83,6 @@ const AdminLogin = () => {
 
     try {
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/admin/login`, { email, password });
-      console.log(response);
       if(response.status===200){
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('role','admin');
