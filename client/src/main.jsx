@@ -8,7 +8,9 @@ import StudentProvider from './context/StudentContext.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AdminProvider>
-      <App />
+      <StudentProvider>
+          <App />
+      </StudentProvider>
     </AdminProvider>
   </StrictMode>
 )

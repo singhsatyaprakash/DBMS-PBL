@@ -1,49 +1,74 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// --- FIX: Added FaTimes to the import list ---
+import { useNavigate } from 'react-router-dom'; 
 import { FaBars, FaTimes, FaKey, FaSignOutAlt } from 'react-icons/fa';
 import { StudentContext } from '../../context/StudentContext';
+import axios from 'axios';
+
 const StudentNavbar = ({ toggleSidebar, isSidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef(null);
+  const navigate = useNavigate(); 
   const {student}=useContext(StudentContext);
-  console.log(student);
+  function getInitials(name) {
+    if (!name) return "";
+    const words = name.trim().split(/\s+/);
+    if (words.length === 0 || words[0] === "") {
+      return "";
+    }
+    if (words.length >= 2) {
+      const firstLetter = words[0][0] || "";
+      const secondLetter = words[1][0] || "";
+      return (firstLetter + secondLetter).toUpperCase();
+    } else {
+      return words[0].substring(0, 2).toUpperCase();
+    }
+  }
 
-  // Effect to close the menu if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
+  const handleChangePassword = () => {
+    navigate('/student/changepassword');
+    setIsMenuOpen(false);
+  };
+
+  const handleLogout = async() => {
+    try{
+      const token=localStorage.getItem('token');
+      let response=await axios.post(`${import.meta.env.VITE_BACKEND_URL}/student/logout`,{token});
+      if(response.status===200){
+        navigate('/')
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuRef]);
+      else{
+        alert("Retry! Logout failed!");
+      }
+    }
+    catch(err){
+      console.error(err?.message);
+    }
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="bg-white shadow-sm p-4 flex items-center justify-between z-30 relative">
-      {/* Left side: Menu toggle */}
-      {/* Only show the button if the toggle function is provided */}
       {toggleSidebar && (
         <button onClick={toggleSidebar} className="text-slate-600 hover:text-blue-600">
           {isSidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </button>
       )}
 
-      {/* This div helps to center the profile when the toggle is hidden */}
       {!toggleSidebar && <div />}
 
-      {/* Right side: Profile with Dropdown */}
-      <div ref={menuRef} className="relative">
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center gap-4 cursor-pointer"
-        >
-          <span className="font-semibold text-slate-700 hidden sm:block">Shashank Bisht</span>
+      <div
+        className="relative"
+        onMouseEnter={() => setIsMenuOpen(true)}
+        onMouseLeave={() => setIsMenuOpen(false)}
+      >
+        <div className="flex items-center gap-4 cursor-pointer">
+          <span className="font-semibold text-slate-700 hidden sm:block">
+            {student?.name}
+          </span>
           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold ring-2 ring-offset-2 ring-blue-300">
-            SB
+            {getInitials(student?.name)}
           </div>
-        </button>
+        </div>
 
         <AnimatePresence>
           {isMenuOpen && (
@@ -57,7 +82,8 @@ const StudentNavbar = ({ toggleSidebar, isSidebarOpen }) => {
               <ul>
                 <li>
                   <button
-                    onClick={() => alert('Change Password Clicked!')}
+                    // 5. Use the new handler
+                    onClick={handleChangePassword}
                     className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
                   >
                     <FaKey className="text-slate-500" />
@@ -66,7 +92,8 @@ const StudentNavbar = ({ toggleSidebar, isSidebarOpen }) => {
                 </li>
                 <li>
                   <button
-                    onClick={() => alert('Logout Clicked!')}
+                    // 6. Use the new handler
+                    onClick={handleLogout}
                     className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <FaSignOutAlt className="text-red-500" />

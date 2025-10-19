@@ -1,27 +1,42 @@
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStudent } from './context/useStudent';
+import { StudentContext } from './context/StudentContext';
+import axios from 'axios';
 
 const StudentProtectWrapper = ({ children }) => {
   const navigate = useNavigate();
 
-  const { student, loading, refresh } = useStudent();
-
+  const {student,setStudent}=useContext(StudentContext);
   useEffect(() => {
+    if (student) {
+      return;
+    }
     const studentToken = localStorage.getItem('token');
-    if (!student && studentToken) {
-      console.log("refesshingg");
-      refresh();
-    }
-    if (!loading && !student) {
+    if (!studentToken) {
       navigate('/');
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [student, loading, navigate]);
 
-  if (loading) return null; // or a spinner
+    const validateStudent = async () => {
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/student/validate-token`,{ token: studentToken });
+        if (response.status === 200) {
+          setStudent(response.data.user);
+        } else {
+          localStorage.removeItem('token');
+          navigate('/');
+        }
+      } catch (error) {
+        console.error("Token validation failed:", error);
+        localStorage.removeItem('token');
+        navigate('/');
+      }
+    };
 
-  return <>{children}</>;
+    validateStudent();
+  }, []);
+
+  return student ? <>{children}</> : null; 
 };
 
 export default StudentProtectWrapper;

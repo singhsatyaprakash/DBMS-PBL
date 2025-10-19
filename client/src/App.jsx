@@ -1,8 +1,18 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import AdminLogin from './Pages/AdminPages/AdminLogin'
+
 import AdminProtectWrapper from './AdminProtectWrapper'
+import StudentProtectWrapper from './StudentProtectWrapper.jsx'
+
+// import AdminLayout from './Pages/AdminPages/Layout';
+import StudentLayout from './Pages/StudentPages/StudentLayout';
+import AcademicLayout from './Pages/StudentPages/AcademicLayout';
+import ExamLayout from './Pages/StudentPages/ExamLayout';
+import FacultyLayout from './Pages/FacultyPages/FacultyLayout.jsx';
+
 import Home from './Pages/OtherPages/Home'
+
+import AdminLogin from './Pages/AdminPages/AdminLogin'
 import AdminDashboard from './Pages/AdminPages/AdminDashboard'
 import Departments from './Pages/AdminPages/Departments'
 import Admissions from './Pages/AdminPages/Admissions'
@@ -13,14 +23,8 @@ import Students from './Pages/AdminPages/Students'
 import ExamTimetable from './Pages/AdminPages/ExamTimetable'
 import Result from './Pages/AdminPages/Result'
 import Library from './Pages/AdminPages/Library'
-import ChangePassword from './component/ChangePassword'
 import AdminProfile from './Pages/AdminPages/AdminProfile'
 
-import AdminLayout from './Pages/AdminPages/Layout';
-import StudentLayout from './Pages/StudentPages/StudentLayout';
-import AcademicLayout from './Pages/StudentPages/AcademicLayout';
-import ExamLayout from './Pages/StudentPages/ExamLayout';
-import FacultyLayout from './Pages/FacultyPages/FacultyLayout.jsx';
 
 import StudentDashboard from './Pages/StudentPages/StudentDashboard';
 import Circulars from './Pages/StudentPages/circulars';
@@ -41,7 +45,8 @@ import FacultyDashboard from './Pages/FacultyPages/FacultyDashboard.jsx';
 import Schedule from './Pages/FacultyPages/Schedule.jsx';
 import TakeAttendance from './Pages/FacultyPages/TakeAttendance.jsx';
 import FacultyCirculars from './Pages/FacultyPages/FacultyCirculars.jsx';
-import StudentProtectWrapper from './StudentProtectWrapper.jsx'
+import AdminChangePassword from './Pages/AdminPages/AdminChangePassword.jsx';
+import StudentChangePassword from './Pages/StudentPages/StudentChangePassword.jsx';
 
 // --- Placeholder pages for routes not yet created ---
 const AcademicHomePage = () => <div className="p-4 text-slate-600">Please select an option from the Academic Menu.</div>;
@@ -57,7 +62,7 @@ const App = () => {
 
         <Route path='/admin/profile' element={<AdminProtectWrapper><AdminProfile/></AdminProtectWrapper>} />
         <Route path="/admin" element={<AdminProtectWrapper><AdminDashboard /></AdminProtectWrapper>} />
-        <Route path="/admin/changepassword" element={<AdminProtectWrapper><ChangePassword /></AdminProtectWrapper>} />
+        <Route path="/admin/changepassword" element={<AdminProtectWrapper><AdminChangePassword/></AdminProtectWrapper>} />
         <Route path="/admin/admissions" element={<AdminProtectWrapper><Admissions /></AdminProtectWrapper>} />
         <Route path="/admin/announcements" element={<AdminProtectWrapper><Announcements /></AdminProtectWrapper>} />
         <Route path="/admin/departments" element={<AdminProtectWrapper><Departments /></AdminProtectWrapper>} />
@@ -68,17 +73,16 @@ const App = () => {
         <Route path="/admin/result" element={<AdminProtectWrapper><Result /></AdminProtectWrapper>} />
         <Route path="/admin/library" element={<AdminProtectWrapper><Library /></AdminProtectWrapper>} />
         
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
 
-        <Route path="/student" element={<StudentLayout />}>
+        <Route path="/student" element={<StudentProtectWrapper><StudentLayout/></StudentProtectWrapper>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="circulars" element={<Circulars />} />
           <Route path="fee" element={<FeePage />} />
+          <Route path='changepassword' element={<StudentChangePassword/>}/>
         </Route>
-        
-        {/* == ACADEMIC SECTION ROUTES (with Layout) == */}
-        <Route path="/student/academic" element={<AcademicLayout />}>
+
+        <Route path="/student/academic" element={<StudentProtectWrapper><AcademicLayout/></StudentProtectWrapper>}>
             <Route index element={<AcademicHomePage />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="timetable" element={<TimeTable />} />
@@ -86,8 +90,7 @@ const App = () => {
             <Route path="subjects" element={<Subjects />} />
         </Route>
 
-        {/* == EXAM SECTION ROUTES (with Layout) == */}
-        <Route path="/student/exams" element={<ExamLayout />}>
+        <Route path="/student/exams" element={<StudentProtectWrapper><ExamLayout/></StudentProtectWrapper>}>
             <Route index element={<Navigate to="result" replace />} />
             <Route path="result" element={<StudentResult />} />
             <Route path="admit-card" element={<AdmitCard />} />

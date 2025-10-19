@@ -1,10 +1,10 @@
 import React, { useState, useContext } from "react";
-import Layout from "../Pages/AdminPages/Layout";
 import axios from "axios";
-import { AdminContext } from "../context/AdminContext";
+import { AdminContext } from "../../context/AdminContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Layout from "./Layout";
 
-const ChangePassword = () => {
+const AdminChangePassword = () => {
   const { admin } = useContext(AdminContext);
   const [formData, setFormData] = useState({
     oldPassword: "",
@@ -151,4 +151,4 @@ const ChangePassword = () => {
   );
 };
 
-export default ChangePassword;
+export default AdminChangePassword;

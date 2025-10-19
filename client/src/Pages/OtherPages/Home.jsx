@@ -53,7 +53,7 @@ const Home = () => {
       const response =await axios.post(`${import.meta.env.VITE_BACKEND_URL}/${userType === 'student' ? 'student' : 'faculty'}/login`,
         {email,password}
       );
-      // console.log(response);
+      // console.log("home:",response);
       if(response.status===200){
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('role', response.data.role);

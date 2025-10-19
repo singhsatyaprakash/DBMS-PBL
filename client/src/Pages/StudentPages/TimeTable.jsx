@@ -1,5 +1,3 @@
-// src/Pages/StudentPages/TimeTable.jsx
-
 import React from 'react';
 
 const TimeTable = () => {

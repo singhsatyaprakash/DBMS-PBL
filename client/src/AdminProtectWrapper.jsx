@@ -36,6 +36,7 @@ const AdminProtectWrapper = ({ children }) => {
 
     validateAdmin();
   }, []);
+
   return admin ? <>{children}</> : null; 
 };
 
