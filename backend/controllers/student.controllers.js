@@ -27,7 +27,6 @@ exports.loginStudent = async (req, res) => {
             {expiresIn:'1h'}
         );
         
-        // Save the token to the student's record in the database
         await query("UPDATE student SET token = ? WHERE student_id = ?", [token, result[0].student_id]);
 
         return res.status(200).json({
@@ -41,6 +40,23 @@ exports.loginStudent = async (req, res) => {
         return res.status(500).json({message:"Server error",error:err.message});
     }
 }
+exports.studentLogout = async (req, res) => {
+    const {token} = req.body;
+
+    if (!token) {
+        return res.status(401).json({ message: "No token provided." });
+    }
+
+    try {
+        await query('INSERT INTO blocked_tokens (token) VALUES (?)', [token]);
+        
+        await query('UPDATE student SET token = NULL WHERE token = ?', [token]);
+        res.status(200).json({ message: "Logged out successfully." });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ message: "Server error during logout." });
+    }
+};
 exports.resetPassword = async (req, res) => {
     const { student_id, oldPassword, newPassword } = req.body;
 
@@ -72,7 +88,71 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-exports.getProfile=async(req,res)=>{
+exports.validationWithToken=async(req,res)=>{
+    const { token } = req.body;
+    if(!token){
+        return res.status(400).json({message:"Token not found!"});
+    }
+    
+    try {
+    
+        const studentResult = await query('SELECT * FROM student WHERE token = ?', [token]);
+        if (studentResult.length === 0) {
+            return res.status(401).json({ message: "Invalid or expired token." });
+        }
+
+        const blockedResult = await query('SELECT * FROM blocked_tokens WHERE token = ?', [token]);
+        if (blockedResult.length > 0) {
+            return res.status(401).json({ message: "Token has been invalidated. Please log in again." });
+        }
+
+        jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: "Token verification failed.", error: err.message });
+            }
+            res.status(200).json({ message: "Token is valid.", user: decoded });
+        });
+
+    } catch (error) {
+        console.error("Token validation error:", error);
+        res.status(500).json({ message: "Server error during token validation." });
+    }
+};
+exports.getProfileWithToken = async (req, res) => {
+    const { token } = req.query;
+    console.log("reaching");
+    if (!token) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "Authentication token is required." 
+        });
+    }
+
+    try {
+        const sql = 'SELECT student_id, name, email FROM student WHERE token = ?';
+        const results = await query(sql, [token]);
+        if (results.length > 0) {
+            const studentProfile = results[0];
+            return res.status(200).json({
+                success: true,
+                message: "Student profile found!",
+                student: studentProfile
+            });
+        } else {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Student not found or token is invalid." 
+            });
+        }
+    } catch (error) {
+        console.error("Error fetching student profile by token:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "An internal server error occurred." 
+        });
+    }
+};
+exports.getProfileById=async(req,res)=>{
     const studentID=req.params.student_id;
     if(!studentID){
         return res.status(400).json({message:"Required Student ID"});
@@ -88,6 +168,32 @@ exports.getProfile=async(req,res)=>{
         return res.status(500).json({message:"Server error",error:err.message});
     }
 }
+exports.getProfile=async(req,res)=>{
+    const {email}=req.query;
+    if(!email){
+        return res.status(400).json({message:"Email id required."})
+    }
+    try{
+        const sql='Select * from student where email=?';
+        const result=await query(sql,[email]);
+        console.log(result);
+        if(result.length===0){
+            return res.status(401).json({message:"Student not found"});
+        }
+
+        const student=result[0];
+        delete student.password;
+        //after fetech the data fetech the course with course id and fetech 
+        return res.status(200).json({message:"Student data fetech sucessfully",student});
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({mesaage:"Internal Server error",error:err.mesg})
+    }
+}
+
+
+
 
 exports.currentSubject = async (req, res) => {
     const studentId = req.params.student_id;

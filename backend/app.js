@@ -1,4 +1,5 @@
 const express=require("express");
+const morgan = require('morgan');
 const app=express();
 const mysql=require("mysql");
 const dotenv=require('dotenv');
@@ -17,8 +18,7 @@ connDB.connect((err) => {
         console.log('Connected to the database');
     }
 });
-
-
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
