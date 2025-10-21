@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import Layout from "./Layout";
 import { 
   FaPlus, FaEllipsisV, FaArrowLeft, FaEye, FaUserTie, FaHashtag, 
-  FaEnvelope, FaPhone, FaMapMarkerAlt, FaAlignLeft, FaUniversity, FaBarcode, FaTrash, FaPencilAlt 
+  FaEnvelope, FaPhone, FaMapMarkerAlt, FaAlignLeft, FaUniversity, 
+  FaBarcode, FaTrash, FaPencilAlt, 
+  FaSearch // ✨ NEW FEATURE: Added Search Icon
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -48,6 +50,7 @@ const Departments = () => {
   const [showDetails, setShowDetails] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc");
   const [menuOpen, setMenuOpen] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(""); // ✨ NEW FEATURE: State for search
   const [formData, setFormData] = useState({
     id: null, name: "", code: "", hodName: "", hodEmail: "", phone: "", officeLocation: "", description: "",
   });
@@ -76,9 +79,19 @@ const Departments = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const sortedDepartments = [...departments].sort((a, b) =>
-    sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
-  );
+  // ✨ MODIFIED: Added filtering logic before sorting
+  const filteredAndSortedDepartments = [...departments]
+    .filter(dept => {
+      const query = searchQuery.toLowerCase();
+      return (
+        dept.name.toLowerCase().includes(query) ||
+        dept.code.toLowerCase().includes(query) ||
+        (dept.hodName && dept.hodName.toLowerCase().includes(query))
+      );
+    })
+    .sort((a, b) =>
+      sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+    );
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -173,68 +186,103 @@ const Departments = () => {
           </motion.button>
         </div>
 
-        <div className="mb-6 flex justify-end">
+        {/* ✨ NEW FEATURE: Search and Sort controls */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="relative w-full sm:max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <FaSearch />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name, code, or HOD..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-3 py-2.5 bg-white/80 backdrop-blur-sm border border-slate-300 text-slate-800 rounded-lg transition duration-200 ease-in-out
+                         focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30
+                         placeholder:text-slate-400 shadow-sm"
+            />
+          </div>
+          
           <select 
             value={sortOrder} 
             onChange={(e) => setSortOrder(e.target.value)} 
-            className="border border-slate-300 p-2 rounded-lg text-sm bg-white/80 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border border-slate-300 p-2.5 rounded-lg text-sm bg-white/80 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto"
           >
             <option value="asc">Sort A-Z</option>
             <option value="desc">Sort Z-A</option>
           </select>
         </div>
         
-        {/* ✨ UI ENHANCEMENT: Grid with glassmorphism cards */}
+        {/* ✨ MODIFIED: Grid now uses AnimatePresence and shows a "No Results" message */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {sortedDepartments.map((dept) => (
-            <motion.div 
-              key={dept.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="bg-white/60 backdrop-blur-lg p-5 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 relative flex flex-col hover:-translate-y-1.5 border border-slate-200/50"
-            >
-              <div className="flex-grow">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-bold text-slate-800 pr-4">{dept.name}</h3>
-                  <div className="relative menu-container">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === dept.id ? null : dept.id); }} 
-                      className="p-1.5 rounded-full text-slate-500 hover:bg-slate-200/70 transition"
-                    >
-                      <FaEllipsisV />
-                    </button>
-                    <AnimatePresence>
-                      {menuOpen === dept.id && (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.9, y: -10 }} 
-                          animate={{ opacity: 1, scale: 1, y: 0 }} 
-                          exit={{ opacity: 0, scale: 0.9 }} 
-                          className="absolute right-0 bg-white border rounded-lg shadow-xl mt-2 z-10 w-36 overflow-hidden"
-                        >
-                          <button onClick={() => handleEdit(dept)} className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-slate-100 text-sm font-medium"><FaPencilAlt size={12} /> Edit</button>
-                          <button onClick={() => handleDelete(dept.id)} className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-slate-100 text-red-600 text-sm font-medium"><FaTrash size={12}/> Delete</button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+          <AnimatePresence>
+            {filteredAndSortedDepartments.map((dept) => (
+              <motion.div 
+                key={dept.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white/60 backdrop-blur-lg p-5 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 relative flex flex-col hover:-translate-y-1.5 border border-slate-200/50"
+              >
+                <div className="flex-grow">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-xl font-bold text-slate-800 pr-4">{dept.name}</h3>
+                    <div className="relative menu-container">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === dept.id ? null : dept.id); }} 
+                        className="p-1.5 rounded-full text-slate-500 hover:bg-slate-200/70 transition"
+                      >
+                        <FaEllipsisV />
+                      </button>
+                      <AnimatePresence>
+                        {menuOpen === dept.id && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: -10 }} 
+                            animate={{ opacity: 1, scale: 1, y: 0 }} 
+                            exit={{ opacity: 0, scale: 0.9 }} 
+                            className="absolute right-0 bg-white border rounded-lg shadow-xl mt-2 z-10 w-36 overflow-hidden"
+                          >
+                            <button onClick={() => handleEdit(dept)} className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-slate-100 text-sm font-medium"><FaPencilAlt size={12} /> Edit</button>
+                            <button onClick={() => handleDelete(dept.id)} className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-slate-100 text-red-600 text-sm font-medium"><FaTrash size={12}/> Delete</button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                  <div className="text-sm text-slate-600 mt-2 space-y-2 border-t pt-3">
+                    <p className="flex items-center gap-2.5"><FaHashtag className="text-slate-400"/> Code: <span className="font-semibold">{dept.code}</span></p>
+                    <p className="flex items-center gap-2.5"><FaUserTie className="text-slate-400"/> HOD: <span className="font-semibold">{dept.hodName || "N/A"}</span></p>
                   </div>
                 </div>
-                <div className="text-sm text-slate-600 mt-2 space-y-2 border-t pt-3">
-                  <p className="flex items-center gap-2.5"><FaHashtag className="text-slate-400"/> Code: <span className="font-semibold">{dept.code}</span></p>
-                  <p className="flex items-center gap-2.5"><FaUserTie className="text-slate-400"/> HOD: <span className="font-semibold">{dept.hodName || "N/A"}</span></p>
-                </div>
-              </div>
-              <motion.button 
-                onClick={() => setShowDetails(dept)} 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="mt-4 flex items-center justify-center gap-2 w-full font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-300"
-              >
-                <FaEye /> View Details
-              </motion.button>
+                <motion.button 
+                  onClick={() => setShowDetails(dept)} 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="mt-4 flex items-center justify-center gap-2 w-full font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-300"
+                >
+                  <FaEye /> View Details
+                </motion.button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          
+          {/* ✨ NEW FEATURE: "No results" message */}
+          {filteredAndSortedDepartments.length === 0 && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-16 px-6 bg-white/60 backdrop-blur-lg rounded-xl shadow-lg border border-slate-200/50 sm:col-span-2 lg:col-span-3 xl:col-span-4"
+            >
+              <h3 className="text-2xl font-semibold text-slate-700">No Departments Found</h3>
+              <p className="text-slate-500 mt-2 max-w-md mx-auto">
+                {searchQuery 
+                  ? `We couldn't find any departments matching "${searchQuery}".` 
+                  : "There are no departments to display. Click 'Add Department' to create one."}
+              </p>
             </motion.div>
-          ))}
+          )}
         </div>
       </div>
 

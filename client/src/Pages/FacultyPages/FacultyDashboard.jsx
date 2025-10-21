@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useContext, useEffect } from 'react';
 import { FaUsers, FaBook, FaRegCalendarAlt, FaBullhorn } from 'react-icons/fa';
+import { FacultyContext } from '../../context/FacultyContext';
+import axios from 'axios';
 
 const StatCard = ({ title, value, icon, color }) => (
     <div className={`bg-gradient-to-br ${color} text-white p-6 rounded-xl shadow-lg flex items-center justify-between`}>
@@ -12,22 +14,32 @@ const StatCard = ({ title, value, icon, color }) => (
 );
 
 const FacultyDashboard = () => {
-
     const stats = [
-        { title: "Total Students", value: "120", icon: <FaUsers />, color: "from-blue-500 to-blue-600" },
-        { title: "Courses Assigned", value: "4", icon: <FaBook />, color: "from-green-500 to-green-600" },
-        { title: "Today's Classes", value: "3", icon: <FaRegCalendarAlt />, color: "from-yellow-500 to-yellow-600" },
+        { title: "Total Students", value: "0", icon: <FaUsers />, color: "from-blue-500 to-blue-600" },
+        { title: "Courses Assigned", value: "0", icon: <FaBook />, color: "from-green-500 to-green-600" },
+        { title: "Today's Classes", value: "0", icon: <FaRegCalendarAlt />, color: "from-yellow-500 to-yellow-600" },
     ];
 
     const announcements = [
         { id: 1, title: "Midterm Exam Schedule Released", date: "2025-10-10" },
         { id: 2, title: "Faculty meeting regarding new curriculum", date: "2025-10-08" },
     ];
-
+    const {faculty,setFaculty}=useContext(FacultyContext);
+    
+    useEffect(()=>{
+        const fetechFaculty=async()=>{
+            if(faculty.id){
+                const response=await axios.get(`${import.meta.env.VITE_BACKEND_URL}/faculty/get-faculty/${faculty.id}`);
+                setFaculty(response.data.faculty);
+            }
+        }
+        fetechFaculty();
+    },[faculty]);
+    
     return (
         <div>
             <h2 className="text-3xl font-bold text-slate-800 mb-6 tracking-tight">
-              Welcome, Dr. Sharma
+              Welcome, {faculty?.name}
             </h2>
 
             {/* Stats Section */}

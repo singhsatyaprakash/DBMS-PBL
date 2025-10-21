@@ -1,52 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes } from 'react-icons/fa';
+import axios from 'axios';
 
-// Dummy data for announcements
-const getDummyAnnouncements = () => [
-  {
-    id: 1,
-    title: 'Midterm Exam Schedule Released',
-    date: '2025-10-10',
-    type: 'Exam',
-    description: 'The schedule for the upcoming midterm examinations has been published. All students are advised to check the university portal for the detailed timetable. Exams will commence from the first week of November.',
-  },
-  {
-    id: 2,
-    title: 'Annual Sports Fest "Velocity 2025"',
-    date: '2025-10-08',
-    type: 'Sports',
-    description: 'Get ready for the most awaited event of the year! Velocity 2025 is here. Registrations for all sports including Cricket, Football, Basketball, and Athletics are now open. The event will take place from October 20th to October 25th. All students are encouraged to participate and show their sportsmanship.',
-  },
-  {
-    id: 3,
-    title: 'Important Notice Regarding Fee Payment Deadline',
-    date: '2025-10-05',
-    type: 'Fees',
-    description: 'This is a long description to demonstrate the "Read More" functionality. The deadline for the payment of semester fees has been extended to October 30th, 2025. Students who fail to pay the fees by the due date will be charged a late fee of Rs. 500. It is mandatory for all students to clear their dues to be eligible for the end-semester examinations. Please ignore this notice if you have already paid the fees. You can pay the fees online through the ERP portal using Net Banking, Debit Card, Credit Card, or UPI. For any fee-related queries, please contact the accounts office during working hours (9 AM to 4 PM). It is crucial to save the receipt after a successful transaction for future reference. The university will not be responsible for any failed transactions if the receipt is not generated.',
-  },
-];
+// --- ICONS ---
+// Added icons for the "View Attachment" button
+const FileIcon = () => (
+  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 384 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M369.9 97.9L286 14C277 5 264.8-.1 252.1-.1H48C21.5 0 0 21.5 0 48v416c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V131.9c0-12.7-5.1-25-14.1-34zM332.1 128H256V51.9l76.1 76.1zM48 464V48h160v104c0 13.3 10.7 24 24 24h104v288H48z"></path></svg>
+);
 
+const LinkIcon = () => (
+  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M440.9 136.3c-13.9-13.9-36.1-13.9-50 0L307 220.2c-6.1 6.1-10.1 14-11.5 22.5l-3.2 19.3c-1.8 11.2-11.4 19.3-22.6 19.3s-20.8-8.1-22.6-19.3l-3.2-19.3c-1.4-8.5-5.4-16.4-11.5-22.5L158.1 136.3c-13.9-13.9-36.1-13.9-50 0s-13.9 36.1 0 50l83.9 83.9c-1.7 3.3-3.2 6.7-4.5 10.2l-37.2 96.9c-4.2 11-2.1 23.4 5.5 31.9s20.1 11.1 31.1 8.2l97.9-25.5c3.6-0.9 7-2.2 10.2-3.9l83.9-83.9c13.9-13.9 13.9-36.1 0-50L440.9 136.3zM256 392c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"></path></svg>
+);
+
+// Updated with new types from your API data
 const getTagClasses = (type) => {
-  switch (type) {
-    case 'Exam':
+  switch (type?.toLowerCase()) {
+    case 'academic':
       return 'bg-blue-100 text-blue-700 border-blue-300';
-    case 'Sports':
+    case 'holiday':
       return 'bg-green-100 text-green-700 border-green-300';
-    case 'Fees':
-      return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    case 'exam':
+      return 'bg-red-100 text-red-700 border-red-300';
+    case 'event':
+      return 'bg-purple-100 text-purple-700 border-purple-300';
     default:
       return 'bg-slate-100 text-slate-700 border-slate-300';
   }
 };
 
+// Helper function to format the date
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
 const Circulars = () => {
   const [announcements, setAnnouncements] = useState([]);
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [loading, setLoading] = useState(true); // Added loading state
 
   useEffect(() => {
-    setAnnouncements(getDummyAnnouncements());
+    const fetechData = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/public/get-announcements`);
+        if (response.status === 200) {
+          console.log(response.data.announcements);
+          setAnnouncements(response.data.announcements);
+        }
+      } catch (error) {
+        console.error("Failed to fetch circulars:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetechData();
   }, []);
 
   return (
@@ -54,25 +66,38 @@ const Circulars = () => {
       <div className="p-6">
         <h2 className="text-3xl font-bold text-slate-800 mb-6 tracking-tight">Circulars & Announcements</h2>
         <div className="space-y-5">
+          {/* --- LOADING AND EMPTY STATES --- */}
+          {loading && (
+            <div className="text-center p-10 text-slate-500">Loading...</div>
+          )}
+          {!loading && announcements.length === 0 && (
+             <div className="text-center p-10 text-slate-500">No announcements found.</div>
+          )}
+
+          {/* --- ANNOUNCEMENTS LIST --- */}
           {announcements.map((item) => {
             const isLong = item.description.length > 200;
             const isExpanded = expandedId === item.id;
             return (
-              <div key={item.id} className="bg-white rounded-lg shadow p-5 border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
+              <div key={item.id} className="bg-white rounded-lg shadow p-5 border border-slate-200 transition-shadow hover:shadow-md">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
                   <h3 className="text-lg font-semibold text-slate-800">{item.title}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTagClasses(item.type)}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTagClasses(item.type)} flex-shrink-0`}>
                     {item.type}
                   </span>
                 </div>
-                <div className="text-sm text-slate-600 mb-2">{item.date}</div>
-                <div className="text-slate-700">
+                
+                {/* Use created_at field and format it */}
+                <div className="text-sm text-slate-600 mb-3">{formatDate(item.created_at)}</div>
+                
+                {/* Description with "Read More" logic */}
+                <div className="text-slate-700 text-sm leading-relaxed">
                   {isLong && !isExpanded
                     ? (
                       <>
                         {item.description.slice(0, 200)}...
                         <button
-                          className="ml-2 text-blue-600 hover:underline text-xs"
+                          className="ml-2 text-blue-600 hover:underline text-xs font-medium"
                           onClick={() => setExpandedId(item.id)}
                         >
                           Read More
@@ -82,57 +107,37 @@ const Circulars = () => {
                     : item.description
                   }
                 </div>
+                
+                {/* "Show Less" button */}
                 {isLong && isExpanded && (
                   <button
-                    className="mt-2 text-blue-600 hover:underline text-xs"
+                    className="mt-2 text-blue-600 hover:underline text-xs font-medium"
                     onClick={() => setExpandedId(null)}
                   >
                     Show Less
                   </button>
                 )}
-                <div className="mt-3 text-right">
-                  <button
-                    className="px-4 py-1 bg-slate-200 text-slate-800 rounded hover:bg-slate-300 text-sm"
-                    onClick={() => setSelectedAnnouncement(item)}
-                  >
-                    View Details
-                  </button>
-                </div>
+                
+                {/* --- ACTION BUTTON --- */}
+                {/* Show "View Attachment" only if file_url exists */}
+                {item.file_url && (
+                  <div className="mt-4 text-left sm:text-right">
+                    <a
+                      href={item.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      {item.file_url.toLowerCase().includes('.pdf') ? <FileIcon /> : <LinkIcon />}
+                      View Attachment
+                    </a>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
-      <AnimatePresence>
-        {selectedAnnouncement && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white rounded-lg shadow-2xl w-full max-w-2xl"
-              initial={{ scale: 0.9, y: -20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-            >
-              <div className="p-6 border-b flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">{selectedAnnouncement.title}</h3>
-                <button onClick={() => setSelectedAnnouncement(null)} className="text-gray-500 hover:text-gray-800"><FaTimes size={20} /></button>
-              </div>
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
-                <p className="text-slate-700 whitespace-pre-wrap">{selectedAnnouncement.description}</p>
-              </div>
-              <div className="p-4 bg-slate-50 text-right rounded-b-lg">
-                <button onClick={() => setSelectedAnnouncement(null)} className="px-5 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 font-semibold transition">
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 };

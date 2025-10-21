@@ -1,12 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaBars, FaKey, FaSignOutAlt } from 'react-icons/fa';
+import { FacultyContext } from '../../context/FacultyContext';
+import noProfile from '../../assets/noprofile.png';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const FacultyNavbar = ({ toggleSidebar }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
-
-  // Effect to close the menu if clicked outside
+  const { faculty } = useContext(FacultyContext);
+  const navigate=useNavigate();
+  const handleLogout=async()=>{
+    const token=localStorage.getItem('token');
+    const response=await axios.post(`${import.meta.env.VITE_BACKEND_URL}/faculty/logout`,{token});
+    console.log(response);
+    if(response.status===200){
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      navigate('/');f
+    }
+  }
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -22,11 +36,25 @@ const FacultyNavbar = ({ toggleSidebar }) => {
       <button onClick={toggleSidebar} className="text-slate-600 hover:text-blue-600">
         <FaBars size={20} />
       </button>
-      
-      <div ref={menuRef} className="relative">
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-4 cursor-pointer">
-          <span className="font-semibold text-slate-700 hidden sm:block">Dr. Meena Sharma</span>
-          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Faculty" className="w-10 h-10 rounded-full object-cover ring-2 ring-offset-2 ring-blue-300"/>
+
+      <div
+        ref={menuRef}
+        className="relative"
+        onMouseEnter={() => setIsMenuOpen(true)}
+        onMouseLeave={() => setIsMenuOpen(false)}
+      >
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="flex items-center gap-4 cursor-pointer"
+        >
+          <span className="font-semibold text-slate-700 hidden sm:block">
+            {faculty?.name}
+          </span>
+          <img
+            src={faculty?.profile_image_url || noProfile}
+            alt="Faculty"
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-offset-2 ring-blue-300"
+          />
         </button>
 
         <AnimatePresence>
@@ -39,12 +67,14 @@ const FacultyNavbar = ({ toggleSidebar }) => {
             >
               <ul>
                 <li>
-                  <button className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                  <button onClick={()=>{
+                      navigate('/faculty/changePassword')
+                  }} className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                     <FaKey /> Change Password
                   </button>
                 </li>
                 <li>
-                  <button className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                  <button onClick={handleLogout} className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                     <FaSignOutAlt /> Logout
                   </button>
                 </li>
@@ -58,4 +88,3 @@ const FacultyNavbar = ({ toggleSidebar }) => {
 };
 
 export default FacultyNavbar;
-

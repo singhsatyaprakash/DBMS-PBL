@@ -34,7 +34,8 @@ const StatCard = ({ title, value, icon, color }) => (
   >
     <div className="relative z-10">
       <h3 className="text-sm font-semibold uppercase tracking-wider opacity-80">{title}</h3>
-      <p className="text-4xl font-bold mt-1">{value}</p>
+      {/* Show 0 while loading, then the value */}
+      <p className="text-4xl font-bold mt-1">{value || 0}</p>
     </div>
     <div className="absolute -right-4 -bottom-4 text-6xl opacity-20 z-0">
       {icon}
@@ -46,28 +47,72 @@ const AdminDashboard = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [announcements, setAnnouncements] = useState([]);
   const { admin } = useContext(AdminContext);
+  const [details, setDetails] = useState({});
 
   const fetchAnnouncements = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/public/get-announcements`);
+      console.log(response.data.announcements)
       setAnnouncements(response.data.announcements);
     } catch (err) {
       console.error("Failed to fetch announcements:", err);
     }
   };
 
+  // FIX: Renamed function for consistency (countDeatils -> countDetails)
+  const countDetails = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/admin/count-details`);
+      setDetails(response.data.data);
+    } catch (err) {
+      console.error("Failed to fetch counts:", err);
+    }
+  }
+
   useEffect(() => {
     fetchAnnouncements();
+    countDetails(); // FIX: Changed to match renamed function
   }, []);
 
-  // Your stats data, now with modern gradient colors
+  // --- ERROR FIXES ARE HERE ---
   const stats = [
-    { title: "Total Students", value: "1200", icon: <FaUserGraduate />, color: "bg-gradient-to-br from-blue-400 to-blue-600" },
-    { title: "Total Faculty", value: "80", icon: <FaChalkboardTeacher />, color: "bg-gradient-to-br from-green-400 to-green-600" },
-    { title: "Courses", value: "45", icon: <FaBookOpen />, color: "bg-gradient-to-br from-yellow-400 to-yellow-600" },
-    { title: "Notices", value: "10", icon: <FaRegNewspaper />, color: "bg-gradient-to-br from-purple-400 to-purple-600" },
-    { title: "Events", value: "6", icon: <FaBullhorn />, color: "bg-gradient-to-br from-pink-400 to-pink-600" },
+    {
+      title: "Total Students",
+      // FIX: Removed extra {} and added || 0 for default
+      value: details?.studentCount,
+      icon: <FaUserGraduate />,
+      color: "bg-gradient-to-br from-blue-400 to-blue-600"
+    },
+    {
+      title: "Total Faculty",
+      // FIX: Corrected typo 'deatils' -> 'details' and removed {}
+      value: details?.facultyCount,
+      icon: <FaChalkboardTeacher />,
+      color: "bg-gradient-to-br from-green-400 to-green-600"
+    },
+    {
+      title: "Courses",
+      // FIX: Corrected typo 'deatils' -> 'details' and removed {}
+      value: details?.courseCount,
+      icon: <FaBookOpen />,
+      color: "bg-gradient-to-br from-yellow-400 to-yellow-600"
+    },
+    {
+      title: "Notices",
+      // FIX: Removed extra {}
+      value: details?.announcementCount,
+      icon: <FaRegNewspaper />,
+      color: "bg-gradient-to-br from-purple-400 to-purple-600"
+    },
+    {
+      title: "Department",
+      // FIX: Corrected typo 'deatils' -> 'details' and removed {}
+      value: details?.departmentCount,
+      icon: <FaBullhorn />,
+      color: "bg-gradient-to-br from-pink-400 to-pink-600"
+    },
   ];
+  // ------------------------------
 
   // Animation variants for Framer Motion
   const containerVariants = {
@@ -86,7 +131,7 @@ const AdminDashboard = () => {
         <Sidebar isOpen={isOpen} />
 
         <main className={`transition-all duration-300 flex-1 p-6 overflow-y-auto ${isOpen ? "ml-[220px]" : "ml-0"}`}>
-          
+
           {/* ===== Welcome Header ===== */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <h2 className="text-3xl font-bold text-slate-800">
@@ -99,7 +144,6 @@ const AdminDashboard = () => {
           </motion.div>
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* ===== Left Column: Stats Section ===== */}
             <div className="lg:col-span-2">
               <motion.div
                 variants={containerVariants}
@@ -111,16 +155,12 @@ const AdminDashboard = () => {
                   <StatCard key={i} {...stat} />
                 ))}
               </motion.div>
-
-              {/* You can add more components here like charts or recent activity */}
-              
             </div>
 
-            {/* ===== Right Column: Recent Announcements ===== */}
             <div className="lg:col-span-1">
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }} 
-                animate={{ opacity: 1, x: 0 }} 
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 h-full"
               >
@@ -133,11 +173,11 @@ const AdminDashboard = () => {
                 <div className="space-y-4">
                   {announcements.length === 0 ? (
                     <div className="text-center py-8">
-                        <FaRegNewspaper className="mx-auto text-4xl text-slate-300 mb-2"/>
-                        <p className="text-slate-500 italic">No announcements to show.</p>
+                      <FaRegNewspaper className="mx-auto text-4xl text-slate-300 mb-2" />
+                      <p className="text-slate-500 italic">No announcements to show.</p>
                     </div>
                   ) : (
-                    announcements.slice(0, 5).map((item) => ( // Show latest 5
+                    announcements.slice(0, 5).map((item) => (
                       <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
                         <div className="flex-shrink-0 h-10 w-10 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center">
                           <FaBullhorn />
@@ -147,7 +187,7 @@ const AdminDashboard = () => {
                             {item.title}
                           </h4>
                           <p className="text-xs text-slate-500 mt-1">
-                             {new Date(item.date).toLocaleDateString()}
+                            {new Date(item.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

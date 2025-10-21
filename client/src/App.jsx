@@ -47,6 +47,8 @@ import TakeAttendance from './Pages/FacultyPages/TakeAttendance.jsx';
 import FacultyCirculars from './Pages/FacultyPages/FacultyCirculars.jsx';
 import AdminChangePassword from './Pages/AdminPages/AdminChangePassword.jsx';
 import StudentChangePassword from './Pages/StudentPages/StudentChangePassword.jsx';
+import FacultyProtectWrapper from './FacultyProtectWrapper.jsx';
+import FacultyChangePassword from './Pages/FacultyPages/FacultyChangePassword.jsx';
 
 // --- Placeholder pages for routes not yet created ---
 const AcademicHomePage = () => <div className="p-4 text-slate-600">Please select an option from the Academic Menu.</div>;
@@ -98,11 +100,12 @@ const App = () => {
         </Route>
 
         <Route path="/faculty" element={<FacultyLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<FacultyDashboard />} />
-            <Route path="schedule" element={<Schedule />} />
-            <Route path="attendance" element={<TakeAttendance />} />
-            <Route path="circular" element={<FacultyCirculars />} />
+            <Route index element={<Navigate to="dashboard" replace />} />m
+            <Route path="dashboard" element={<FacultyProtectWrapper><FacultyDashboard /></FacultyProtectWrapper>} />
+            <Route path="schedule" element={<FacultyProtectWrapper><Schedule /></FacultyProtectWrapper>} />
+            <Route path="attendance" element={<FacultyProtectWrapper><TakeAttendance /></FacultyProtectWrapper>} />
+            <Route path="circular" element={<FacultyProtectWrapper><FacultyCirculars /></FacultyProtectWrapper>} />
+            <Route path='changePassword' element={<FacultyProtectWrapper><FacultyChangePassword/></FacultyProtectWrapper>}/>
         </Route>
 
         {/* 404 Not Found Route */}

@@ -59,19 +59,60 @@ const Faculty = () => {
 
     const getProfileImageUrl = (faculty) => faculty.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(faculty.name) || '?'}&background=random&color=fff`;
 
+    // ✨ FIX: Updated fetch logic to gracefully handle 404s (empty data) vs. real 500 errors
     const fetchData = async () => {
-        setIsLoading(true); setError(null);
+        setIsLoading(true); 
+        setError(null);
+        let hasFatalError = false; // Flag to track if a real server error occurred
+
         try {
-            const [deptRes, facultyRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/get-all-departments`),
-                axios.get(`${API_BASE_URL}/get-all-faculty`)
-            ]);
-            setDepartments(deptRes.data);
-            setFacultyList(facultyRes.data);
-        } catch (err) {
-            const errorMessage = "Failed to fetch data. Please try again later.";
-            setError(errorMessage); toast.error(errorMessage); console.error(err);
-        } finally { setIsLoading(false); }
+            // --- Fetch Departments ---
+            try {
+                const deptRes = await axios.get(`${API_BASE_URL}/get-all-departments`);
+                setDepartments(deptRes.data || []); // Ensure it's an array
+            } catch (deptErr) {
+                // If 404, it just means no departments exist yet. This is not a fatal error.
+                if (deptErr.response && deptErr.response.status === 404) {
+                    console.warn("No departments found (404), setting to empty array.");
+                    setDepartments([]);
+                } else {
+                    // It's a different error (like 500), so treat it as fatal
+                    console.error("Failed to fetch departments:", deptErr);
+                    hasFatalError = true;
+                }
+            }
+
+            // --- Fetch Faculty ---
+            try {
+                const facultyRes = await axios.get(`${API_BASE_URL}/get-all-faculty`);
+                setFacultyList(facultyRes.data || []); // Ensure it's an array
+            } catch (facultyErr) {
+                // If 404, it just means no faculty exist yet.
+                if (facultyErr.response && facultyErr.response.status === 404) {
+                    console.warn("No faculty found (404), setting to empty array.");
+                    setFacultyList([]);
+                } else {
+                    // It's a different error
+                    console.error("Failed to fetch faculty:", facultyErr);
+                    hasFatalError = true;
+                }
+            }
+
+            if (hasFatalError) {
+                const errorMessage = "Failed to fetch critical data. Please try again later.";
+                setError(errorMessage); 
+                toast.error(errorMessage);
+            }
+
+        } catch (globalErr) {
+            // Fallback for any other unexpected issues
+            const errorMessage = "An unexpected error occurred. Please try again later.";
+            setError(errorMessage); 
+            toast.error(errorMessage); 
+            console.error("Global fetch error:", globalErr);
+        } finally { 
+            setIsLoading(false); 
+        }
     };
 
     useEffect(() => { fetchData(); }, []);
@@ -153,6 +194,8 @@ const Faculty = () => {
     // ✨ UI ENHANCEMENT: Restyled Loading, Error, and No-Results states
     const renderContent = () => {
         if (isLoading) return <div className="flex justify-center items-center py-20"><FaSpinner className="text-5xl text-indigo-500 animate-spin" /></div>;
+        
+        // ✨ This error now only shows for fatal errors, not 404s
         if (error) return (
             <div className="text-center py-16 px-6 bg-red-50/50 rounded-xl shadow-sm border border-red-200">
                 <FaExclamationTriangle className="mx-auto text-5xl text-red-400 mb-4" />
@@ -160,6 +203,17 @@ const Faculty = () => {
                 <p className="text-red-500 mt-1">{error}</p>
             </div>
         );
+        
+        // This correctly handles "No Records Found" if the lists are empty
+        if (facultyList.length === 0) return (
+             <div className="text-center py-16 px-6 bg-white/70 rounded-xl shadow-sm border border-slate-200">
+                <FaUser className="mx-auto text-5xl text-slate-400 mb-4" />
+                <h3 className="text-xl font-semibold text-slate-700">No Faculty Found</h3>
+                <p className="text-slate-500 mt-1">Click "Add New Faculty" to get started.</p>
+            </div>
+        );
+
+        // This handles "No Results" from filtering
         if (filteredAndSortedFaculty.length === 0) return (
             <div className="text-center py-16 px-6 bg-white/70 rounded-xl shadow-sm border border-slate-200">
                 <FaSearch className="mx-auto text-5xl text-slate-400 mb-4" />
@@ -167,6 +221,7 @@ const Faculty = () => {
                 <p className="text-slate-500 mt-1">Try adjusting your search or filters.</p>
             </div>
         );
+
         return (
             <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <AnimatePresence>
@@ -189,7 +244,7 @@ const Faculty = () => {
                             <h3 className="text-lg font-bold text-slate-800">{faculty.name}</h3>
                             <p className="text-sm text-indigo-600 font-medium">{faculty.designation}</p>
                             <div className="text-sm text-slate-600 mt-3 border-t pt-3 flex-grow w-full space-y-1">
-                                <p className="flex items-center justify-center gap-2"><FaBuilding className="text-slate-400"/> {departmentName}</p>
+                                <p className="flex items-center justify-center gap-2"><FaBuilding className="text-slate-400"/> {faculty.department_id}</p>
                                 <p className="flex items-center justify-center gap-2"><FaGraduationCap className="text-slate-400"/> {faculty.degree}</p>
                             </div>
                             <motion.button onClick={() => handleViewDetails(faculty)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="mt-4 w-full font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
@@ -220,7 +275,7 @@ const Faculty = () => {
                 <div className="bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md border mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>
                         <label htmlFor="search" className="text-sm font-medium text-slate-600 flex items-center gap-2 mb-1.5"><FaSearch /> Search by Name</label>
-                        <input id="search" type="text" placeholder="Enter faculty name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full border-slate-300 p-2 rounded-lg bg-white/80 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
+                        <input id="search" type="text" placeholder="Enter faculty name..." value={searchTerm} onChange={(e) => setSearchTerm(e.targe.value)} className="w-full border-slate-300 p-2 rounded-lg bg-white/80 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
                     </div>
                     <div>
                         <label htmlFor="filterDept" className="text-sm font-medium text-slate-600 flex items-center gap-2 mb-1.5"><FaFilter /> Filter by Department</label>
