@@ -13,6 +13,8 @@ ALTER TABLE Course_Branch
 ADD CONSTRAINT fk_course
 FOREIGN KEY (course_id) REFERENCES Courses(course_id)
 ON DELETE CASCADE;
+
 select * from Course_Branch;
 
 drop table Course_Branch;
+truncate table course_branch;

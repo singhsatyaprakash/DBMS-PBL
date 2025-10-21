@@ -31,7 +31,6 @@ app.use('/admin',adminRoutes);
 app.use('/faculty',facultyRoutes);
 app.use('/student',studentRoutes);
 
-
 app.get("/check",(req,res)=>{
     res.send("All okay");
 })

@@ -6,7 +6,11 @@ const facultyController=require('../controllers/faculty.controllers');
 
 router.post('/login', facultyController.loginFaculty);
 router.post('/reset-password',facultyController.resetPassword);
+router.post('/logout',facultyController.logout);
+router.post('/validate-token',facultyController.validationWithToken);
 router.get('/get-faculty',facultyController.getFaculty);
+router.get('/get-faculty/:id',facultyController.getFacultyById);
+
 
 router.get('/assigned-subjects/:faculty_id',facultyController.getAssignedSubjects);
 

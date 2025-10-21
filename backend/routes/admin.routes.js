@@ -12,6 +12,8 @@ router.post('/logout', adminController.adminLogout);
 router.get('/profile-by-token',adminController.getProfileWithToken);
 router.post('/reset-password',adminController.resetPassword);
 
+//deatils numbers...
+router.get('/count-details',adminController.countDetails);
 //annnouncements..
 router.post('/add-announcement',upload.single('announcement_file'),adminController.uploadAnnouncement);
 router.put('/update-announcement/:id', upload.single('announcement_file'), adminController.updateAnnouncement);

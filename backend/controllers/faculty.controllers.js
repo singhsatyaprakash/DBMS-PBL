@@ -7,33 +7,41 @@ require('dotenv').config();
 const query = util.promisify(connDB.query).bind(connDB);
 
 exports.loginFaculty = async (req, res) => {
-    const {email ,password}=req.body;
-    console.log(req.body);
-    if(!email || !password){
-        return res.status(400).json({message:"All fields are required"});
+    const { email, password } = req.body;
+    // console.log(req.body);
+    if (!email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
     }
-    try{
-        const result= await query("SELECT * from faculty where email=?",[email]);
-        if(result.length===0){
-            return res.status(404).json({message:"Faculty not found"});
+    try {
+        const result = await query("SELECT * from faculty where email=?", [email]);
+        if (result.length === 0) {
+            return res.status(404).json({ message: "Faculty not found" });
         }
-        const isMatch=await bcrypt.compare(password,result[0].password);
-        if(!isMatch){
-            return res.status(401).json({message:"Invalid credentials"});
+
+        const isMatch = await bcrypt.compare(password, result[0].password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
-        const token=jwt.sign(
-            {id:result[0].faculty_id,email:result[0].email,name:result[0].name},
+
+        const token = jwt.sign(
+            { id: result[0].faculty_id, email: result[0].email, name: result[0].name },
             process.env.JWT_SECRET_KEY,
-            {expiresIn:'1h'}
+            { expiresIn: '1h' }
         );
+        await query(
+            "UPDATE faculty SET token = ? WHERE faculty_id = ?",
+            [token, result[0].faculty_id]
+        );
+
         return res.status(200).json({
-            message:"Login successful",
+            message: "Login successful",
             token,
-            role:"faculty",
+            role: "faculty",
         });
     }
-    catch(err){
-        return res.status(500).json({message:"Server error",error:err.message});
+    catch (err) {
+        console.error("Login Error:", err); 
+        return res.status(500).json({ message: "Server error", error: err.message });
     }
 }
 exports.resetPassword = async (req, res) => {
@@ -66,7 +74,53 @@ exports.resetPassword = async (req, res) => {
         return res.status(500).json({ message: "Server error", error: err.message });
     }
 };
+exports.logout = async (req, res) => {
+    const {token} = req.body;
 
+    if (!token) {
+        return res.status(401).json({ message: "No token provided." });
+    }
+
+    try {
+        await query('INSERT INTO blocked_tokens (token) VALUES (?)', [token]);
+        
+        await query('UPDATE faculty SET token = NULL WHERE token = ?', [token]);
+        res.status(200).json({ message: "Logged out successfully." });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ message: "Server error during logout." });
+    }
+};
+exports.validationWithToken=async(req,res)=>{
+    const { token } = req.body;
+    if(!token){
+        return res.status(400).json({message:"Token not found!"});
+    }
+    
+    try {
+    
+        const facultyResult = await query('SELECT * FROM faculty WHERE token = ?', [token]);
+        if (facultyResult.length === 0) {
+            return res.status(401).json({ message: "Invalid or expired token." });
+        }
+
+        const blockedResult = await query('SELECT * FROM blocked_tokens WHERE token = ?', [token]);
+        if (blockedResult.length > 0) {
+            return res.status(401).json({ message: "Token has been invalidated. Please log in again." });
+        }
+
+        jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: "Token verification failed.", error: err.message });
+            }
+            res.status(200).json({ message: "Token is valid.", user: decoded });
+        });
+
+    } catch (error) {
+        console.error("Token validation error:", error);
+        res.status(500).json({ message: "Server error during token validation." });
+    }
+};
 
 exports.getFaculty=async(req,res)=>{
     try{
@@ -84,6 +138,23 @@ exports.getFaculty=async(req,res)=>{
     }
 }
 
+exports.getFacultyById=async(req,res)=>{
+    const {id}=req.params;
+    try{
+        const result=await query('Select * from faculty where faculty_id=?',[id]);
+        if(result.length===0){
+            return res.status(404).json({message:"No faculty found"});
+        }
+        delete result[0].password;
+        return res.status(200).json({
+            message:"Faculty retrieved successfully",
+            faculty:result[0]
+        });
+    }
+    catch(err){
+        return res.status(500).json({message:"Server error",error:err.message});
+    }
+}
 exports.getAssignedSubjects=async(req,res)=>{
     const facultyId= req.params.faculty_id;
     if(!facultyId){

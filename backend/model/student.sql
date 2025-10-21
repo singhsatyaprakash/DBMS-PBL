@@ -10,7 +10,6 @@ CREATE TABLE Student (
     -- Foreign Keys and Academic Info
     course_id INT NOT NULL,                             -- Foreign Key to Courses
     branch_id INT NULL,                                 -- Foreign Key to Course_Branch (can be null)
-    section_id INT NULL,                                -- Foreign Key to Sections (can be null)
     department_id INT NOT NULL,                         -- Foreign Key to Departments
     semester INT,
     year INT,
@@ -38,7 +37,6 @@ CREATE TABLE Student (
     -- Defining Foreign Key Constraints
     FOREIGN KEY (course_id) REFERENCES Courses(course_id) ON DELETE CASCADE,
     FOREIGN KEY (branch_id) REFERENCES Course_Branch(branch_id) ON DELETE SET NULL, -- SET NULL is often safer
-    FOREIGN KEY (section_id) REFERENCES Sections(section_id) ON DELETE SET NULL,
     FOREIGN KEY (department_id) REFERENCES Departments(department_id) ON DELETE CASCADE
 );
 
@@ -53,9 +51,10 @@ DESC Student;
 SELECT * FROM Student;
 
 
-DELETE FROM Student WHERE student_id = 1000;
+DELETE FROM Student WHERE student_id = 1001;
 
 
 DELETE FROM Student;
 
 TRUNCATE TABLE Student;
+drop table student;

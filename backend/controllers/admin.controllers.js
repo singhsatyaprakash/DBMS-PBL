@@ -22,7 +22,7 @@ const getPublicIdFromUrl = (url) => {
 
 
 
-
+///admin session controlss...
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -90,8 +90,6 @@ exports.getProfileWithToken = async (req, res) => {
         });
     }
 };
-
-
 exports.adminLogout = async (req, res) => {
     const {token} = req.body;
 
@@ -139,7 +137,6 @@ exports.resetPassword = async (req, res) => {
         return res.status(500).json({ message: "Server error", error: err.message });
     }
 };
-
 exports.validateToken=async(req,res)=>{
     const { token } = req.body;
     if(!token){
@@ -171,7 +168,39 @@ exports.validateToken=async(req,res)=>{
     }
 };
 
+//Count-details..
+exports.countDetails = async (req, res) => {
+  try {
+    const queryStr = `
+      SELECT
+        (SELECT COUNT(*) FROM faculty) AS facultyCount,
+        (SELECT COUNT(*) FROM student) AS studentCount,
+        (SELECT COUNT(*) FROM departments) AS departmentCount, 
+        (SELECT COUNT(*) FROM courses) AS courseCount,
+        (SELECT COUNT(*) FROM announcement) AS announcementCount
+    `;
 
+    const rows = await query(queryStr);
+    const counts = rows[0]; 
+
+    // console.log(counts); 
+    return res.status(200).json({
+      success: true,
+      message: "Dashboard counts retrieved successfully",
+      data: counts
+    });
+
+  } catch (error) {
+
+    console.error("Error fetching dashboard counts:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+///annoncement...
 exports.uploadAnnouncement = async (req, res) => {
     const description = req.body.description ? req.body.description.replace(/[^\x20-\x7E\s]/g, '') : '';
     const {title,type,admin_id} = req.body;
@@ -291,6 +320,7 @@ exports.deleteAnnouncement = async (req, res) => {
     }
 };
 
+///departments...
 exports.addDepartment= async(req,res)=>{
     const{ department_name,dept_code,hod_name,hod_email,phone,office_location,description} = req.body;
     if(!department_name || !dept_code ){
@@ -524,7 +554,7 @@ exports.deleteCourse = async (req, res) => {
     }
 };
 
-
+///branches...
 exports.addBranch=async(req,res)=>{
     const {branch_name,course_id,description}=req.body;
     if(!branch_name ||!course_id){
@@ -730,7 +760,6 @@ exports.addStudent = async (req, res) => {
             email,
             course_id,
             branch_id,
-            section_id,
             department_id,
             semester,
             year,
@@ -774,15 +803,15 @@ exports.addStudent = async (req, res) => {
         const result = await query(
             `INSERT INTO Student (
                 university_id, name, email, password, roll_no,
-                course_id, branch_id, section_id, department_id,
+                course_id, branch_id, department_id,
                 semester, year, dob, gender,
                 nationality, blood_group, contact, address,
                 father_name, father_contact, father_occupation,
                 mother_name, mother_contact, mother_occupation
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 university_id, name, email, hashedPassword, newRollNo,
-                course_id, branch_id || null, section_id || null, department_id,
+                course_id, branch_id || null, department_id,
                 semester, year, dob, gender,
                 nationality, blood_group, contact, address,
                 father_name, father_contact, father_occupation,
@@ -880,7 +909,6 @@ exports.addBulkStudent = async (req, res) => {
                 roll_no,
                 s.course_id,
                 s.branch_id || null,
-                s.section_id || null,
                 s.department_id,
                 s.semester,
                 s.year,
@@ -909,7 +937,7 @@ exports.addBulkStudent = async (req, res) => {
         const sql = `
             INSERT INTO Student
             (university_id, name, email, password, roll_no,
-             course_id, branch_id, section_id, department_id,
+             course_id, branch_id, department_id,
              semester, year, dob, gender,
              nationality, blood_group, contact, address,
              father_name, father_contact, father_occupation,
@@ -931,56 +959,90 @@ exports.addBulkStudent = async (req, res) => {
     }
 };
 
+// exports.getAllStudents = async (req, res) => {
+//     try {
+//         const { course_id } = req.query;
+
+//         let sql = `
+//             SELECT
+//                 s.student_id, s.university_id, s.name, s.email, s.roll_no,
+//                 s.contact, s.year, s.semester, c.course_name, cb.branch_name
+//             FROM Student s
+//             LEFT JOIN Courses c ON s.course_id = c.course_id
+//             LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
+//         `;
+//         const params = [];
+
+//         if (course_id) {
+//             sql += " WHERE s.course_id = ?";
+//             params.push(course_id);
+//         }
+
+//         sql += " ORDER BY s.name ASC";
+
+//         const students = await query(sql, params);
+
+//         res.status(200).json({
+//             success: true,
+//             count: students.length,
+//             data: students
+//         });
+
+//     } catch (err) {
+//         console.error("Error fetching students:", err);
+//         res.status(500).json({ success: false, message: 'Server error', error: err.message });
+//     }
+// };
+
 exports.getAllStudents = async (req, res) => {
-    try {
-        const { course_id } = req.query;
+    try {
+        const { course_id } = req.query;
 
-        let sql = `
-            SELECT
-                s.student_id, s.university_id, s.name, s.email, s.roll_no,
-                s.contact, s.year, s.semester, c.course_name, cb.branch_name
-            FROM Student s
-            LEFT JOIN Courses c ON s.course_id = c.course_id
-            LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
-        `;
-        const params = [];
+        let sql = `
+            SELECT
+                s.student_id, s.university_id, s.name, s.email, s.roll_no,
+                s.contact, s.year, s.semester, c.course_name, cb.branch_name,
+                d.department_name
+            FROM Student s
+            LEFT JOIN Courses c ON s.course_id = c.course_id
+            LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
+            LEFT JOIN Departments d ON s.department_id = d.department_id
+        `;
+        const params = [];
 
-        if (course_id) {
-            sql += " WHERE s.course_id = ?";
-            params.push(course_id);
-        }
+        if (course_id) {
+            sql += " WHERE s.course_id = ?";
+            params.push(course_id);
+        }
 
-        sql += " ORDER BY s.name ASC";
+        sql += " ORDER BY s.name ASC";
 
-        const students = await query(sql, params);
+        const students = await query(sql, params);
 
-        res.status(200).json({
-            success: true,
-            count: students.length,
-            data: students
-        });
+        res.status(200).json({
+            success: true,
+            count: students.length,
+            data: students
+        });
 
-    } catch (err) {
-        console.error("Error fetching students:", err);
-        res.status(500).json({ success: false, message: 'Server error', error: err.message });
-    }
+    } catch (err) {
+        console.error("Error fetching students:", err);
+        res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    }
 };
-
 exports.getStudentById = async (req, res) => {
     try {
         const { student_id } = req.params;
 
         const sql = `
-            SELECT 
-                s.*, 
+            SELECT
+                s.*,
                 c.course_name,
                 cb.branch_name,
-                sec.section_name,
                 d.department_name
             FROM Student s
             LEFT JOIN Courses c ON s.course_id = c.course_id
             LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
-            LEFT JOIN Sections sec ON s.section_id = sec.section_id
             LEFT JOIN Departments d ON s.department_id = d.department_id
             WHERE s.student_id = ?
         `;
@@ -1088,7 +1150,7 @@ exports.deleteStudent = async (req, res) => {
     }
 };
 
-
+///subjects...
 exports.addNewSubject=async(req,res)=>{
     const {subject_name,subject_code,course,credits,description}=req.body;
     try{

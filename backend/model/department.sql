@@ -12,3 +12,4 @@ CREATE TABLE departments (
 
 
 select * from departments;
+TRUNCATE TABLE departments;

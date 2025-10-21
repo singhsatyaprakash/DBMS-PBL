@@ -28,8 +28,6 @@ exports.getAllAnnouncements = async (req, res) => {
             return res.status(200).json({ message: "No announcements found", announcements: [] });
         }
 
-        // If BACKEND_BASE_URL provided, ensure file urls are absolute (cloudinary usually returns absolute URLs)
-
         const normalized = announcements.map(a => ({
             id: a.announcement_id,
             title: a.title,
