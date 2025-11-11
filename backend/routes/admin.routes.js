@@ -26,7 +26,7 @@ router.get('/get-department/:department_id',adminController.getDepartment);
 router.put('/update-department/:id', adminController.updateDepartment);
 router.delete('/delete-department/:id', adminController.deleteDepartment);
 
-
+router.get('/get-courses/:department_id', adminController.getCoursesByDepartment);
 //adding new course...
 router.post('/add-new-course', adminController.addNewCourse);
 router.get('/get-all-courses', adminController.getAllCourses);
@@ -55,10 +55,16 @@ router.delete('/student/:student_id', adminController.deleteStudent);
 
 
 
-//adding new subject...
+//Subjects...
 router.post('/add-new-subject', adminController.addNewSubject);
 router.get('/get-all-subjects', adminController.getAllSubjects);
-router.get('/get-all-subjects-by-course/:course', adminController.getAllSubjectsByCourse);
+router.get('/get-all-subjects-by-course/:course_id', adminController.getAllSubjectsByCourse);
+router.put('/update-subject/:subject_id', adminController.updateSubject);
+router.delete('/delete-subject/:subject_id', adminController.deleteSubject);
+
+
+//assign sunject to faculty...a
+router.post('/assign-subject', adminController.assignSubject);
 
 //adding section in course....
 router.post('/add-section',adminController.addSection);

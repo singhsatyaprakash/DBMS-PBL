@@ -9,7 +9,7 @@ CREATE TABLE departments (
   description text
   );
   
-
+use university;
 
 select * from departments;
 TRUNCATE TABLE departments;

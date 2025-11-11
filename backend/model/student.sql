@@ -48,13 +48,13 @@ ALTER TABLE Student AUTO_INCREMENT = 1000;
 DESC Student;
 
 
-SELECT * FROM Student;
+SELECT * FROM Student where course_id=1 and semester=1;
 
+UPDATE student 
+SET semester = 1 
+WHERE student_id = 1155;
+
+select * from student where student_id=1155;
 
 DELETE FROM Student WHERE student_id = 1001;
 
-
-DELETE FROM Student;
-
-TRUNCATE TABLE Student;
-drop table student;

@@ -20,8 +20,11 @@ ADD COLUMN degree VARCHAR(100);
 
 
 DROP TABLE FACULTY;
-truncate table faculty; 
+
 select * from faculty;
-rollback;
+
+desc faculty;
+
+
 delete from faculty where faculty_id=2;
 

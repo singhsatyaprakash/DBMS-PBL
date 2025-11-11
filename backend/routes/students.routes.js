@@ -11,9 +11,7 @@ router.get('/profile/:student_id',studentController.getProfileById);
 router.get('/profile',studentController.getProfile);
 
 router.get('/current-subjects',studentController.currentSubject);
-router.get('/get-student-attendance',studentController.getStudentAttendance);
+router.get('/my-attendance/:studentId',studentController.getMyAttendance);
+// router.get('/get-student-attendance',studentController.getStudentAttendance);
 
 module.exports=router;
-
-
-// router.get('get-announcement',studentController.getAnnouncement);

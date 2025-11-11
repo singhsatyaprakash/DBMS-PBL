@@ -434,6 +434,27 @@ exports.getAllDepartments=async(req,res)=>{
     }
 }
 
+
+exports.getCoursesByDepartment = async (req, res) => {
+    const { department_id } = req.params;
+    console.log(department_id);
+    if (!department_id) {
+        return res.status(400).json({ message: "Department ID is required" });
+    }
+
+    try {
+        const courses = await query(
+            'SELECT course_id, course_name FROM courses WHERE department_id = ?',
+            [department_id]
+        );
+
+        res.status(200).json(courses);
+
+    } catch (error) {
+        console.error("Error fetching courses by department:", error);
+        res.status(500).json({ message: "Server error while fetching courses" });
+    }
+};
 // Add new course
 exports.addNewCourse = async (req, res) => {
     const { course_name, course_code, department, duration_years, total_semesters, branches } = req.body
@@ -959,76 +980,35 @@ exports.addBulkStudent = async (req, res) => {
     }
 };
 
-// exports.getAllStudents = async (req, res) => {
-//     try {
-//         const { course_id } = req.query;
-
-//         let sql = `
-//             SELECT
-//                 s.student_id, s.university_id, s.name, s.email, s.roll_no,
-//                 s.contact, s.year, s.semester, c.course_name, cb.branch_name
-//             FROM Student s
-//             LEFT JOIN Courses c ON s.course_id = c.course_id
-//             LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
-//         `;
-//         const params = [];
-
-//         if (course_id) {
-//             sql += " WHERE s.course_id = ?";
-//             params.push(course_id);
-//         }
-
-//         sql += " ORDER BY s.name ASC";
-
-//         const students = await query(sql, params);
-
-//         res.status(200).json({
-//             success: true,
-//             count: students.length,
-//             data: students
-//         });
-
-//     } catch (err) {
-//         console.error("Error fetching students:", err);
-//         res.status(500).json({ success: false, message: 'Server error', error: err.message });
-//     }
-// };
 
 exports.getAllStudents = async (req, res) => {
-    try {
-        const { course_id } = req.query;
-
-        let sql = `
-            SELECT
-                s.student_id, s.university_id, s.name, s.email, s.roll_no,
-                s.contact, s.year, s.semester, c.course_name, cb.branch_name,
-                d.department_name
-            FROM Student s
-            LEFT JOIN Courses c ON s.course_id = c.course_id
-            LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
+    try {
+        const sql = `
+            SELECT
+                s.student_id AS id,
+                s.university_id AS universityId,
+                s.name,
+                s.email,
+                s.roll_no AS rollNo,
+                s.contact,
+                s.year AS admissionYear,
+                s.semester,
+                c.course_name AS course,
+                cb.branch_name AS branchName,
+                d.department_name AS departmentName
+            FROM Student s
+            LEFT JOIN Courses c ON s.course_id = c.course_id
+            LEFT JOIN Course_Branch cb ON s.branch_id = cb.branch_id
             LEFT JOIN Departments d ON s.department_id = d.department_id
-        `;
-        const params = [];
-
-        if (course_id) {
-            sql += " WHERE s.course_id = ?";
-            params.push(course_id);
-        }
-
-        sql += " ORDER BY s.name ASC";
-
-        const students = await query(sql, params);
-
-        res.status(200).json({
-            success: true,
-            count: students.length,
-            data: students
-        });
-
-    } catch (err) {
-        console.error("Error fetching students:", err);
-        res.status(500).json({ success: false, message: 'Server error', error: err.message });
-    }
+            ORDER BY s.name ASC
+        `;
+        const students = await query(sql);
+        console.log("good");
+        res.status(200).json(students);
+    } catch (err) {
+        console.error("Error fetching students:", err);
+        res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    }
 };
 exports.getStudentById = async (req, res) => {
     try {
@@ -1150,63 +1130,178 @@ exports.deleteStudent = async (req, res) => {
     }
 };
 
-///subjects...
-exports.addNewSubject=async(req,res)=>{
-    const {subject_name,subject_code,course,credits,description}=req.body;
-    try{
-        if(!subject_name || !subject_code ||!course || !credits){
-            return res.status(400).json({ message: "Subject name, code, and credits are required" });
+//subjects...
+exports.addNewSubject = async (req, res) => {
+    // Destructure all fields from the table
+    const { subject_name, subject_code, semester, credits, description, course_id, branch_id } = req.body;
+
+    try {
+        // Validate all NOT NULL fields
+        if (!subject_name || !subject_code || !semester || !credits || !course_id) {
+            return res.status(400).json({ message: "Subject name, code, semester, credits, and course_id are required" });
         }
+
+        // Check if subject code already exists
         const existing = await query('SELECT * FROM Subjects WHERE subject_code = ?', [subject_code]);
         if (existing.length > 0) {
             return res.status(409).json({ message: "Subject with this code already exists" });
         }
+
+        // Corrected INSERT query with all columns
         await query(
-            `INSERT INTO Subjects (subject_name, subject_code,course, credits, description)
-             VALUES (?, ?, ?, ?, ?)`,
-            [subject_name, subject_code,course, credits, description || null]
+            `INSERT INTO Subjects (subject_name, subject_code, semester, credits, description, course_id, branch_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [subject_name, subject_code, semester, credits, description || null, course_id, branch_id || null]
         );
 
         res.status(201).json({ message: "Subject added successfully" });
-    }
-    catch(error){
+    } catch (error) {
         console.error("Error adding subject:", error);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-}
-
-exports.getAllSubjects=async(req,res)=>{
-    try{
-        const subjects=await query('SELECT * FROM Subjects');
-        if(subjects.length===0){
+};
+exports.getAllSubjects = async (req, res) => {
+    try {
+        const subjects = await query('SELECT * FROM Subjects');
+        if (subjects.length === 0) {
             return res.status(404).json("No subjects found");
         }
         res.status(200).json(subjects);
+    } catch (error) {
+        return res.status(500).json({ message: "server error", error: error.message });
     }
-    catch(error){
-        return res.status(500).json({message:"server error",error:error.message});
-    }
-}
+};
+exports.getAllSubjectsByCourse = async (req, res) => {
+    // Use course_id from params
+    const { course_id } = req.params;
 
-exports.getAllSubjectsByCourse=async(req,res)=>{
-    const course = req.params.course;
-    if (!course) {
-        return res.status(400).json({ message: "Course Name is required" });
+    if (!course_id) {
+        return res.status(400).json({ message: "Course ID is required" });
     }
+
     try {
+        // Query using the correct course_id column
         const subjects = await query(
-            `SELECT * FROM Subjects WHERE course= ?`,
-            [course]
+            `SELECT * FROM Subjects WHERE course_id = ?`,
+            [course_id]
         );
+
         if (subjects.length === 0) {
-            return res.status(404).json({ message: "No subjects found for this course" });
+            return res.status(404).json({ message: "No subjects found for this course ID" });
         }
         res.status(200).json(subjects);
     } catch (error) {
         console.error("Error fetching subjects by course:", error);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-}
+};
+exports.updateSubject = async (req, res) => {
+    const { subject_id } = req.params;
+    const { subject_name, subject_code, semester, credits, description, course_id, branch_id } = req.body;
+
+    try {
+        // Validate all NOT NULL fields
+        if (!subject_name || !subject_code || !semester || !credits || !course_id) {
+            return res.status(400).json({ message: "Subject name, code, semester, credits, and course_id are required" });
+        }
+
+        // Check if the new subject_code already exists for a *different* subject
+        const existing = await query(
+            'SELECT * FROM Subjects WHERE subject_code = ? AND subject_id != ?',
+            [subject_code, subject_id]
+        );
+        if (existing.length > 0) {
+            return res.status(409).json({ message: "Another subject with this code already exists" });
+        }
+
+        // Run the UPDATE query
+        const result = await query(
+            `UPDATE Subjects SET 
+                subject_name = ?, 
+                subject_code = ?, 
+                semester = ?, 
+                credits = ?, 
+                description = ?, 
+                course_id = ?, 
+                branch_id = ?
+             WHERE subject_id = ?`,
+            [subject_name, subject_code, semester, credits, description || null, course_id, branch_id || null, subject_id]
+        );
+
+        // Check if any row was actually updated
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Subject not found or no changes made" });
+        }
+
+        res.status(200).json({ message: "Subject updated successfully" });
+    } catch (error) {
+        console.error("Error updating subject:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+exports.deleteSubject = async (req, res) => {
+    const { subject_id } = req.params;
+
+    if (!subject_id) {
+        return res.status(400).json({ message: "Subject ID is required" });
+    }
+
+    try {
+        const result = await query(
+            'DELETE FROM Subjects WHERE subject_id = ?',
+            [subject_id]
+        );
+
+        // Check if a row was actually deleted
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
+
+        res.status(200).json({ message: "Subject deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting subject:", error);
+        // Handle foreign key constraint errors
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(409).json({ message: "Cannot delete subject. It is referenced by other records (e.g., faculty or results)." });
+        }
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+//assing faculty to subject...
+
+exports.assignSubject = async (req, res) => {
+    const { subject_id, faculty_id, session_year } = req.body;
+
+    // 1. Validation
+    if (!subject_id || !faculty_id || !session_year) {
+        return res.status(400).json({ message: "subject_id, faculty_id, and session_year are required" });
+    }
+
+    try {
+        // 2. Check if this assignment already exists
+        const existing = await query(
+            'SELECT * FROM SubjectFaculty WHERE subject_id = ? AND faculty_id = ? AND session_year = ?',
+            [subject_id, faculty_id, session_year]
+        );
+
+        if (existing.length > 0) {
+            return res.status(409).json({ message: "This faculty member is already assigned to this subject for this session." });
+        }
+
+        // 3. Insert the new assignment
+        await query(
+            'INSERT INTO SubjectFaculty (subject_id, faculty_id, session_year) VALUES (?, ?, ?)',
+            [subject_id, faculty_id, session_year]
+        );
+
+        res.status(201).json({ message: "Subject assigned to faculty successfully." });
+
+    } catch (error) {
+        console.error("Error assigning subject:", error);
+        res.status(500).json({ message: "Server error during subject assignment." });
+    }
+};
 
 exports.addSection=async(req,res)=>{
     const {section_name,course_id,semster,branch_id}=req.body;

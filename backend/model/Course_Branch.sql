@@ -17,4 +17,5 @@ ON DELETE CASCADE;
 select * from Course_Branch;
 
 drop table Course_Branch;
-truncate table course_branch;
+
+desc course_Branch;

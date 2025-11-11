@@ -10,16 +10,16 @@ router.post('/logout',facultyController.logout);
 router.post('/validate-token',facultyController.validationWithToken);
 router.get('/get-faculty',facultyController.getFaculty);
 router.get('/get-faculty/:id',facultyController.getFacultyById);
+router.get('/my-subjects',facultyController.getMyAssignedSubjects);
 
+router.get('/get-total-student',facultyController.getTotalStudents);
 
-router.get('/assigned-subjects/:faculty_id',facultyController.getAssignedSubjects);
-
-router.get('/get-section/:faculty_id',facultyController.getSections);
-
-router.get('/get-student/:section_id',facultyController.getStudentOfSection);
-
+router.get('/students-for-subject', facultyController.getStudentsForSubject);
 router.post('/mark-attendance',facultyController.markAttendance);
 
 router.get('/get-announcement',facultyController.getAnnouncement);
+
+
+router.get('/attendance-summary/:sf_id',facultyController.getAttendanceSummary);
 
 module.exports = router;
