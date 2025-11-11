@@ -1,25 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Layout from './Layout';
+import Layout from './Layout'; // Assuming this component exists in your project
+import axios from 'axios';
 
-const allStudentsData = [
-  { id: 1, universityId: '2100101', name: 'Aarav Sharma', course: 'B.Tech CSE', semester: 3, admissionYear: 2021, contact: '9876543210', avatar: 'AS' },
-  { id: 2, universityId: '2100102', name: 'Vivaan Singh', course: 'B.Tech CSE', semester: 3, admissionYear: 2021, contact: '9876543211', avatar: 'VS' },
-  { id: 3, universityId: '2100103', name: 'Aditya Kumar', course: 'B.Tech CSE', semester: 5, admissionYear: 2020, contact: '9876543212', avatar: 'AK' },
-  { id: 4, universityId: '2100104', name: 'Vihaan Gupta', course: 'B.Tech CSE', semester: 5, admissionYear: 2020, contact: '9876543213', avatar: 'VG' },
-  { id: 5, universityId: '2205301', name: 'Priya Verma', course: 'BCA', semester: 3, admissionYear: 2022, contact: '9876543214', avatar: 'PV' },
-  { id: 6, universityId: '2205302', name: 'Anika Desai', course: 'BCA', semester: 3, admissionYear: 2022, contact: '9876543215', avatar: 'AD' },
-  { id: 7, universityId: '2206112', name: 'Saanvi Joshi', course: 'BBA', semester: 5, admissionYear: 2020, contact: '9876543216', avatar: 'SJ' },
-  { id: 8, universityId: '2206113', name: 'Muhammad Khan', course: 'BBA', semester: 1, admissionYear: 2023, contact: '9876543217', avatar: 'MK' },
-  { id: 9, universityId: '2206114', name: 'Ananya Roy', course: 'BBA', semester: 1, admissionYear: 2023, contact: '9876543218', avatar: 'AR' },
-];
+// --- Helper Functions ---
 
-const mockCourses = ['All', 'B.Tech CSE', 'BCA', 'BBA'];
-const mockSemesters = ['All', 1, 2, 3, 4, 5, 6, 7, 8];
-const mockYears = ['All', 2023, 2022, 2021, 2020];
+// Generates initials from a name (e.g., "Aarav Sharma" -> "AS")
+const getInitials = (name) => {
+  if (!name) return '??';
+  const parts = name.split(' ');
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  // Get first letter of first and last name
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
 
-const fetchStudentData = () => new Promise(resolve => setTimeout(() => resolve(allStudentsData), 500));
-
-// SVG Icons
+// --- SVG Icons ---
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -35,6 +29,7 @@ const DeleteIcon = () => (
   </svg>
 );
 
+// --- Edit Modal Component ---
 const EditStudentModal = ({ student, onClose, onSave }) => {
   const [form, setForm] = useState(student);
 
@@ -88,6 +83,7 @@ const EditStudentModal = ({ student, onClose, onSave }) => {
   );
 };
 
+// --- Main Students Page Component ---
 const Students = () => {
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,19 +94,58 @@ const Students = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'ascending' });
   const [editingStudent, setEditingStudent] = useState(null);
 
-  useEffect(() => {
-    fetchStudentData().then(data => {
-      setStudents(data);
-      setIsLoading(false);
-    });
-  }, []);
+  const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
+  // --- Data Fetching ---
+  useEffect(() => {
+    const fetchStudents = async () => {
+      setIsLoading(true);
+      try {
+        const res = await axios.get(`${API_URL}/admin/students`);
+        // Assuming the API returns data in the same format as allStudentsData
+        // e.g., { id, universityId, name, course, semester, admissionYear, contact }
+        console.log(res);
+        setStudents(res.data);
+      } catch (err) {
+        console.error("Failed to fetch students:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStudents();
+  }, [API_URL]);
+
+  // --- Dynamic Filters (Derived from data) ---
+  const courses = useMemo(() => {
+    return ['All', ...new Set(students.map(s => s.course))];
+  }, [students]);
+
+  const semesters = useMemo(() => {
+    return ['All', ...new Set(students.map(s => s.semester))].sort((a, b) => {
+      if (a === 'All') return -1;
+      if (b === 'All') return 1;
+      return a - b;
+    });
+  }, [students]);
+
+  const admissionYears = useMemo(() => {
+    return ['All', ...new Set(students.map(s => s.admissionYear))].sort((a, b) => {
+      if (a === 'All') return -1;
+      if (b === 'All') return 1;
+      return b - a; // Sort years descending
+    });
+  }, [students]);
+
+  // --- Filtering & Sorting ---
   const sortedAndFilteredStudents = useMemo(() => {
     let filtered = students
       .filter(s => courseFilter === 'All' || s.course === courseFilter)
-      .filter(s => semesterFilter === 'All' || s.semester === semesterFilter)
-      .filter(s => yearFilter === 'All' || s.admissionYear === yearFilter)
-      .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.universityId.includes(searchTerm));
+      .filter(s => semesterFilter === 'All' || s.semester == semesterFilter)
+      .filter(s => yearFilter === 'All' || s.admissionYear == yearFilter)
+      .filter(s => 
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        s.universityId.includes(searchTerm)
+      );
 
     if (sortConfig.key !== null) {
       filtered = [...filtered].sort((a, b) => {
@@ -134,11 +169,20 @@ const Students = () => {
     setSortConfig({ key, direction });
   };
 
+  // --- API Actions ---
+
   // Delete student permanently
   const handleDelete = async (id) => {
-    // TODO: Replace with your backend API call
-    // await fetch(`/api/students/${id}`, { method: 'DELETE' });
-    setStudents(prev => prev.filter(student => student.id !== id));
+    if (window.confirm("Are you sure you want to delete this student?")) {
+      try {
+        // We assume the delete route is /admin/student/:id
+        await axios.delete(`${API_URL}/admin/student/${id}`);
+        setStudents(prev => prev.filter(student => student.id !== id));
+      } catch (err) {
+        console.error("Failed to delete student:", err);
+        alert("Error: Could not delete student.");
+      }
+    }
   };
 
   const handleEdit = (student) => {
@@ -146,24 +190,31 @@ const Students = () => {
   };
 
   const handleSaveEdit = async (updatedStudent) => {
-    // TODO: Send updatedStudent to backend with PUT request
-    setStudents(prev =>
-      prev.map(s => (s.id === updatedStudent.id ? updatedStudent : s))
-    );
-    setEditingStudent(null);
+    try {
+      // We assume the update route is /admin/student/:id
+      await axios.put(`${API_URL}/admin/student/${updatedStudent.id}`, updatedStudent);
+      setStudents(prev =>
+        prev.map(s => (s.id === updatedStudent.id ? updatedStudent : s))
+      );
+      setEditingStudent(null);
+    } catch (err) {
+      console.error("Failed to update student:", err);
+      alert("Error: Could not save changes.");
+    }
   };
 
   return (
     <Layout>
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Students</h1>
             <p className="text-gray-500 mt-1">Manage student information for GEHU Admin.</p>
           </div>
         </div>
-        <div className="p-4 border-b border-gray-200">
-          {/* Filter Labels */}
+        
+        {/* --- Filters --- */}
+        <div className="p-4 border-y border-gray-200 bg-gray-50 rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
             <span className="font-semibold text-gray-600">Search</span>
             <span className="font-semibold text-gray-600">Course Filter</span>
@@ -186,7 +237,7 @@ const Students = () => {
                 onChange={e => setCourseFilter(e.target.value)}
                 className="w-full border p-2 rounded"
               >
-                {mockCourses.map(course => (
+                {courses.map(course => (
                   <option key={course} value={course}>
                     {course}
                   </option>
@@ -199,7 +250,7 @@ const Students = () => {
                 onChange={e => setSemesterFilter(e.target.value)}
                 className="w-full border p-2 rounded"
               >
-                {mockSemesters.map(semester => (
+                {semesters.map(semester => (
                   <option key={semester} value={semester}>
                     {semester}
                   </option>
@@ -212,7 +263,7 @@ const Students = () => {
                 onChange={e => setYearFilter(e.target.value)}
                 className="w-full border p-2 rounded"
               >
-                {mockYears.map(year => (
+                {admissionYears.map(year => (
                   <option key={year} value={year}>
                     {year}
                   </option>
@@ -221,30 +272,32 @@ const Students = () => {
             </div>
           </div>
         </div>
-        <div className="p-4">
+        
+        {/* --- Student Table --- */}
+        <div className="overflow-x-auto mt-4">
           <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
             <thead>
               <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                <th className="px-6 py-3" onClick={() => requestSort('name')} style={{ cursor: 'pointer' }}>
+                <th className="px-6 py-3 text-left" onClick={() => requestSort('name')} style={{ cursor: 'pointer' }}>
                   Name {sortConfig.key === 'name' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : '▲▼'}
                 </th>
-                <th className="px-6 py-3" onClick={() => requestSort('universityId')} style={{ cursor: 'pointer' }}>
+                <th className="px-6 py-3 text-left" onClick={() => requestSort('universityId')} style={{ cursor: 'pointer' }}>
                   Student ID {sortConfig.key === 'universityId' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : '▲▼'}
                 </th>
-                <th className="px-6 py-3" onClick={() => requestSort('course')} style={{ cursor: 'pointer' }}>
+                <th className="px-6 py-3 text-left" onClick={() => requestSort('course')} style={{ cursor: 'pointer' }}>
                   Course {sortConfig.key === 'course' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : '▲▼'}
                 </th>
-                <th className="px-6 py-3" onClick={() => requestSort('semester')} style={{ cursor: 'pointer' }}>
+                <th className="px-6 py-3 text-left" onClick={() => requestSort('semester')} style={{ cursor: 'pointer' }}>
                   Semester {sortConfig.key === 'semester' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : '▲▼'}
                 </th>
-                <th className="px-6 py-3" onClick={() => requestSort('admissionYear')} style={{ cursor: 'pointer' }}>
+                <th className="px-6 py-3 text-left" onClick={() => requestSort('admissionYear')} style={{ cursor: 'pointer' }}>
                   Year {sortConfig.key === 'admissionYear' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : '▲▼'}
                 </th>
-                <th className="px-6 py-3">Contact</th>
+                <th className="px-6 py-3 text-left">Contact</th>
                 <th className="px-6 py-3 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-gray-700 text-sm">
               {isLoading ? (
                 <tr>
                   <td colSpan="7" className="text-center p-8">Loading student data...</td>
@@ -259,7 +312,7 @@ const Students = () => {
                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                          {student.avatar}
+                          {getInitials(student.name)}
                         </div>
                         <div className="font-bold">{student.name}</div>
                       </div>
@@ -293,6 +346,8 @@ const Students = () => {
             </tbody>
           </table>
         </div>
+
+        {/* --- Edit Modal --- */}
         {editingStudent && (
           <EditStudentModal
             student={editingStudent}

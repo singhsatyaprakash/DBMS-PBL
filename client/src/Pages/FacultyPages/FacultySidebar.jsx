@@ -6,14 +6,16 @@ import {
   FaCalendarAlt,
   FaUserCheck,
   FaBullhorn,
+  FaUserCircle,
 } from 'react-icons/fa';
 
 const FacultySidebar = ({ isOpen }) => {
   const links = [
     { name: 'Dashboard', icon: <FaTachometerAlt />, path: '/faculty/dashboard' },
-    { name: 'Schedule', icon: <FaCalendarAlt />, path: '/faculty/schedule' },
+    { name: 'Lectures', icon: <FaCalendarAlt />, path: '/faculty/schedule' },
     { name: 'Take Attendance', icon: <FaUserCheck />, path: '/faculty/attendance' },
     { name: 'Circular', icon: <FaBullhorn />, path: '/faculty/circular' },
+  { name: 'Profile', icon: <FaUserCircle />, path: '/faculty/profile' },
   ];
 
   const sidebarVariants = {

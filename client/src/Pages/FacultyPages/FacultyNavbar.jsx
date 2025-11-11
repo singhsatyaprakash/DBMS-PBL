@@ -18,7 +18,7 @@ const FacultyNavbar = ({ toggleSidebar }) => {
     if(response.status===200){
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      navigate('/');f
+      navigate('/');
     }
   }
   useEffect(() => {

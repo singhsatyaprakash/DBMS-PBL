@@ -13,9 +13,9 @@ const StudentSidebar = ({ isOpen }) => {
   const links = [
     { name: 'Dashboard', icon: <FaTachometerAlt />, path: '/student/dashboard' },
     { name: 'Academic', icon: <FaBook />, path: '/student/academic' },
-    { name: 'Fee Payment', icon: <FaMoneyBillWave />, path: '/student/fee' },
+    // { name: 'Fee Payment', icon: <FaMoneyBillWave />, path: '/student/fee' },
     { name: 'Circulars', icon: <FaBullhorn />, path: '/student/circulars' },
-    { name: 'Exams', icon: <FaFileSignature />, path: '/student/exams' },
+    // { name: 'Exams', icon: <FaFileSignature />, path: '/student/exams' },
   ];
 
   const sidebarVariants = {

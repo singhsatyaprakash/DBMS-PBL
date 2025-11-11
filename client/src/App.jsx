@@ -45,10 +45,12 @@ import FacultyDashboard from './Pages/FacultyPages/FacultyDashboard.jsx';
 import Schedule from './Pages/FacultyPages/Schedule.jsx';
 import TakeAttendance from './Pages/FacultyPages/TakeAttendance.jsx';
 import FacultyCirculars from './Pages/FacultyPages/FacultyCirculars.jsx';
+import FacultyProfile from './Pages/FacultyPages/FacultyProfile.jsx';
 import AdminChangePassword from './Pages/AdminPages/AdminChangePassword.jsx';
 import StudentChangePassword from './Pages/StudentPages/StudentChangePassword.jsx';
 import FacultyProtectWrapper from './FacultyProtectWrapper.jsx';
 import FacultyChangePassword from './Pages/FacultyPages/FacultyChangePassword.jsx';
+import Subject from './Pages/AdminPages/Subject.jsx';
 
 // --- Placeholder pages for routes not yet created ---
 const AcademicHomePage = () => <div className="p-4 text-slate-600">Please select an option from the Academic Menu.</div>;
@@ -71,6 +73,7 @@ const App = () => {
         <Route path="/admin/courses" element={<AdminProtectWrapper><Courses /></AdminProtectWrapper>} />
         <Route path="/admin/faculty" element={<AdminProtectWrapper><Faculty /></AdminProtectWrapper>} />
         <Route path="/admin/students" element={<AdminProtectWrapper><Students /></AdminProtectWrapper>} />
+        <Route path="/admin/subjects" element={<AdminProtectWrapper><Subject /></AdminProtectWrapper>} />
         <Route path="/admin/exam-timetable" element={<AdminProtectWrapper><ExamTimetable /></AdminProtectWrapper>} />
         <Route path="/admin/result" element={<AdminProtectWrapper><Result /></AdminProtectWrapper>} />
         <Route path="/admin/library" element={<AdminProtectWrapper><Library /></AdminProtectWrapper>} />
@@ -99,13 +102,14 @@ const App = () => {
             <Route path="back-exam" element={<BackExam />} />
         </Route>
 
-        <Route path="/faculty" element={<FacultyLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />m
+    <Route path="/faculty" element={<FacultyLayout />}> 
+      <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<FacultyProtectWrapper><FacultyDashboard /></FacultyProtectWrapper>} />
             <Route path="schedule" element={<FacultyProtectWrapper><Schedule /></FacultyProtectWrapper>} />
             <Route path="attendance" element={<FacultyProtectWrapper><TakeAttendance /></FacultyProtectWrapper>} />
             <Route path="circular" element={<FacultyProtectWrapper><FacultyCirculars /></FacultyProtectWrapper>} />
-            <Route path='changePassword' element={<FacultyProtectWrapper><FacultyChangePassword/></FacultyProtectWrapper>}/>
+      <Route path="profile" element={<FacultyProtectWrapper><FacultyProfile/></FacultyProtectWrapper>} />
+      <Route path='changePassword' element={<FacultyProtectWrapper><FacultyChangePassword/></FacultyProtectWrapper>}/>
         </Route>
 
         {/* 404 Not Found Route */}

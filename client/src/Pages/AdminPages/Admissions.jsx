@@ -50,23 +50,42 @@ const Admissions = () => {
     const [formData, setFormData] = useState(initialFormData);
     const [profileImagePreview, setProfileImagePreview] = useState(null);
 
+    // Fetches departments on initial load
     useEffect(() => {
         const fetchInitialData = async () => {
             const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/admin`;
             try {
-                const [deptRes, courseRes] = await Promise.all([
-                    axios.get(`${BASE_URL}/get-all-departments`),
-                    axios.get(`${BASE_URL}/get-all-courses`),
-                ]);
+                const deptRes = await axios.get(`${BASE_URL}/get-all-departments`);
                 setDepartments(deptRes.data || []);
-                setCourses(courseRes.data || []);
             } catch (error) {
-                toast.error("Failed to load admission data.");
+                toast.error("Failed to load departments.");
             }
         };
         fetchInitialData();
     }, []);
 
+    // Fetches courses whenever the selected department changes
+    useEffect(() => {
+        const fetchCourses = async () => {
+            if (!formData.department_id) {
+                setCourses([]); // Clear courses if no department is selected
+                return;
+            }
+            const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/admin`;
+            try {
+                // Assuming you created this new route
+                const response = await axios.get(`${BASE_URL}/get-courses/${formData.department_id}`);
+                console.log(response);
+                setCourses(response.data || []);
+            } catch (error) {
+                toast.error(`Failed to load courses.`);
+                setCourses([]);
+            }
+        };
+        fetchCourses();
+    }, [formData.department_id]); // This hook depends on department_id
+
+    // Fetches branches whenever the selected course changes
     useEffect(() => {
         const fetchBranches = async () => {
             if (!formData.course_id) {
@@ -95,8 +114,21 @@ const Admissions = () => {
             }
             setProfileImagePreview(URL.createObjectURL(files[0]));
         } else {
-            if (key === 'course_id') {
-                setFormData(prev => ({ ...prev, branch_id: '', [key]: value }));
+            if (key === 'department_id') {
+                // When department changes, reset course and branch
+                setFormData(prev => ({ 
+                    ...prev, 
+                    course_id: '', 
+                    branch_id: '', 
+                    [key]: value 
+                }));
+            } else if (key === 'course_id') {
+                // When course changes, reset branch
+                setFormData(prev => ({ 
+                    ...prev, 
+                    branch_id: '', 
+                    [key]: value 
+                }));
             } else {
                 setFormData(prev => ({ ...prev, [key]: value }));
             }
@@ -125,6 +157,7 @@ const Admissions = () => {
         }
     };
 
+    // --- THIS FUNCTION WAS MISSING ---
     const handleBulkAdmissionSubmit = async (e) => {
         e.preventDefault();
         if (!csvFile) return toast.warn("Please select a CSV file.");
@@ -148,6 +181,7 @@ const Admissions = () => {
         }
     };
 
+    // --- THESE VARIABLES WERE MISSING ---
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
@@ -167,7 +201,7 @@ const Admissions = () => {
             
             <motion.div 
                 className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                variants={containerVariants}
+                variants={containerVariants} // This line now works
                 initial="hidden"
                 animate="visible"
             >
@@ -245,23 +279,26 @@ const Admissions = () => {
                                         <h4 className="text-lg font-semibold text-slate-700 mb-4">Academic Information</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                              <FormSelect id="department_id" label="Department" value={formData.department_id} onChange={handleInputChange} required>
-                                                <option value="">Select Department</option>
-                                                {departments.map(d => <option key={d.department_id} value={d.department_id}>{d.department_name}</option>)}
+                                                 <option value="">Select Department</option>
+                                                 {departments.map(d => <option key={d.department_id} value={d.department_id}>{d.department_name}</option>)}
                                              </FormSelect>
-                                             <FormSelect id="course_id" label="Course" value={formData.course_id} onChange={handleInputChange} required>
+                                             
+                                             <FormSelect id="course_id" label="Course" value={formData.course_id} onChange={handleInputChange} required disabled={!formData.department_id || courses.length === 0}>
                                                  <option value="">Select Course</option>
-                                                {courses.map(c => <option key={c.course_id} value={c.course_id}>{c.course_name}</option>)}
+                                                 {courses.map(c => <option key={c.course_id} value={c.course_id}>{c.course_name}</option>)}
                                              </FormSelect>
+                                             
                                              <FormSelect id="branch_id" label="Branch" value={formData.branch_id} onChange={handleInputChange} disabled={!formData.course_id || branches.length === 0}>
                                                  <option value="">Select Branch</option>
-                                                {branches.map(b => <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>)}
+                                                 {branches.map(b => <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>)}
                                              </FormSelect>
+                                             
                                              <FormInput id="year" label="Current Year" type="number" icon={<FaClipboardList/>} value={formData.year} onChange={handleInputChange} required/>
                                              <FormInput id="semester" label="Current Semester" type="number" icon={<FaClipboardList/>} value={formData.semester} onChange={handleInputChange} required/>
                                         </div>
                                      </div>
 
-                                     <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                                    <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
                                         <h4 className="text-lg font-semibold text-slate-700 mb-4">Guardian Information</h4>
                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                             <FormInput id="father_name" label="Father's Name" icon={<FaUserTie/>} value={formData.father_name} onChange={handleInputChange}/>
@@ -271,7 +308,7 @@ const Admissions = () => {
                                             <FormInput id="father_occupation" label="Father's Occupation" icon={<FaBriefcase/>} value={formData.father_occupation} onChange={handleInputChange}/>
                                             <FormInput id="mother_occupation" label="Mother's Occupation" icon={<FaBriefcase/>} value={formData.mother_occupation} onChange={handleInputChange}/>
                                          </div>
-                                     </div>
+                                    </div>
 
                                     <div className="flex justify-end gap-4 pt-4 sticky bottom-0 bg-slate-50 py-4 -mx-6 px-6">
                                         <button type="button" onClick={() => setIsNewAdmissionOpen(false)} className="px-6 py-2.5 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition">Cancel</button>
@@ -286,37 +323,38 @@ const Admissions = () => {
                 )}
             </AnimatePresence>
 
+            {/* --- Bulk Admission Modal --- */}
             <AnimatePresence>
                 {isBulkAdmissionOpen && (
                      <motion.div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                         <motion.div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-2xl text-center" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
-                             <div className="flex justify-between items-center mb-6">
-                                 <h3 className="text-2xl font-bold text-slate-800">Bulk Student Admission</h3>
-                                 <button onClick={() => setIsBulkAdmissionOpen(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={20}/></button>
-                             </div>
-                             <form onSubmit={handleBulkAdmissionSubmit}>
-                                 <div className="mt-4 flex justify-center px-6 pt-8 pb-8 border-2 border-slate-300 border-dashed rounded-lg bg-slate-50">
-                                     <div className="space-y-2 text-center">
-                                         <FaFileUpload className="mx-auto h-16 w-16 text-slate-400" />
-                                         <div className="flex text-md text-slate-600">
-                                             <label htmlFor="csv-upload" className="relative cursor-pointer rounded-md font-semibold text-emerald-600 hover:text-emerald-500">
-                                                 <span>Upload a CSV file</span>
-                                                 <input id="csv-upload" name="csv-upload" type="file" accept=".csv" className="sr-only" onChange={(e) => setCsvFile(e.target.files[0])} />
-                                             </label>
-                                             <p className="pl-1">or drag and drop</p>
-                                         </div>
-                                         <p className="text-sm text-slate-500">Must be a .CSV file up to 10MB</p>
-                                     </div>
-                                 </div>
-                                 {csvFile && <p className="mt-4 text-md font-semibold text-emerald-700 bg-emerald-50 py-2 px-4 rounded-md">File selected: {csvFile.name}</p>}
+                        <motion.div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-2xl text-center" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-slate-800">Bulk Student Admission</h3>
+                                <button onClick={() => setIsBulkAdmissionOpen(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={20}/></button>
+                            </div>
+                            <form onSubmit={handleBulkAdmissionSubmit}>
+                                <div className="mt-4 flex justify-center px-6 pt-8 pb-8 border-2 border-slate-300 border-dashed rounded-lg bg-slate-50">
+                                    <div className="space-y-2 text-center">
+                                        <FaFileUpload className="mx-auto h-16 w-16 text-slate-400" />
+                                        <div className="flex text-md text-slate-600">
+                                            <label htmlFor="csv-upload" className="relative cursor-pointer rounded-md font-semibold text-emerald-600 hover:text-emerald-500">
+                                                <span>Upload a CSV file</span>
+                                                <input id="csv-upload" name="csv-upload" type="file" accept=".csv" className="sr-only" onChange={(e) => setCsvFile(e.target.files[0])} />
+                                            </label>
+                                            <p className="pl-1">or drag and drop</p>
+                                        </div>
+                                        <p className="text-sm text-slate-500">Must be a .CSV file up to 10MB</p>
+                                    </div>
+                                </div>
+                                {csvFile && <p className="mt-4 text-md font-semibold text-emerald-700 bg-emerald-50 py-2 px-4 rounded-md">File selected: {csvFile.name}</p>}
 
-                                 <div className="mt-8">
-                                     <button type="submit" disabled={isUploading || !csvFile} className="w-full flex justify-center items-center gap-2 bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300 transition-all duration-300 shadow-md hover:shadow-lg">
-                                         {isUploading ? <><FaSpinner className="animate-spin" /> Uploading...</> : 'Upload and Process File'}
-                                     </button>
-                                 </div>
-                             </form>
-                         </motion.div>
+                                <div className="mt-8">
+                                    <button type="submit" disabled={isUploading || !csvFile} className="w-full flex justify-center items-center gap-2 bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300 transition-all duration-300 shadow-md hover:shadow-lg">
+                                        {isUploading ? <><FaSpinner className="animate-spin" /> Uploading...</> : 'Upload and Process File'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
                      </motion.div>
                 )}
             </AnimatePresence>

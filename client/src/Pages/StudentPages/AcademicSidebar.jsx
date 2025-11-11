@@ -5,8 +5,8 @@ import { FaArrowLeft } from 'react-icons/fa';
 const AcademicSidebar = () => {
   const links = [
     { name: 'Attendance', path: '/student/academic/attendance' },
-    { name: 'TimeTable', path: '/student/academic/timetable' },
-    { name: 'Assignment', path: '/student/academic/assignment' },
+    // { name: 'TimeTable', path: '/student/academic/timetable' },
+    // { name: 'Assignment', path: '/student/academic/assignment' },
     { name: 'Current Subject', path: '/student/academic/subjects' },
   ];
 

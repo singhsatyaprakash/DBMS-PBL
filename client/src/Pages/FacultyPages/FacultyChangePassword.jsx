@@ -59,12 +59,13 @@ const FacultyChangePassword = () => {
     }
 
     try {
-      // Changed API endpoint from /student/ to /faculty/
+      console.log(formData);
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/faculty/reset-password`, {
         faculty_id, // Changed from student_id
         oldPassword,
         newPassword
       });
+      console.log(response);
       
       setSuccess('Password updated successfully!');
       setFormData({

@@ -36,7 +36,7 @@ const Announcements = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { admin } = useContext(AdminContext);
-  // console.log(admin.admin.admin_id);
+  // console.log(admin.id);
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -132,7 +132,7 @@ const Announcements = () => {
     formData.append('title', title);
     formData.append('description', description);
     formData.append('type', type);
-    formData.append('admin_id',admin.admin.admin_id);
+    formData.append('admin_id',admin.id);
     if (file) formData.append('announcement_file', file);
 
     try {

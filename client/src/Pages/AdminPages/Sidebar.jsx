@@ -22,7 +22,7 @@ const menuItems = [
   { name: "Courses", path: "/admin/courses", icon: <FaBookOpen /> },
   { name: "Faculty", path: "/admin/faculty", icon: <FaChalkboardTeacher /> },
   { name: "Students", path: "/admin/students", icon: <FaUserGraduate /> },
-  // { name: "Exam Timetable", path: "/admin/exam-timetable", icon: <FaRegCalendarAlt /> },
+  { name: "Subjects", path: "/admin/subjects", icon: <FaRegCalendarAlt /> },
   // { name: "Result", path: "/admin/result", icon: <FaClipboardList /> },
   // { name: "Library", path: "/admin/library", icon: <FaBookOpen /> },
 ];

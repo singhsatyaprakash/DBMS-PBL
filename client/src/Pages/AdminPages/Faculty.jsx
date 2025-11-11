@@ -275,7 +275,7 @@ const Faculty = () => {
                 <div className="bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md border mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>
                         <label htmlFor="search" className="text-sm font-medium text-slate-600 flex items-center gap-2 mb-1.5"><FaSearch /> Search by Name</label>
-                        <input id="search" type="text" placeholder="Enter faculty name..." value={searchTerm} onChange={(e) => setSearchTerm(e.targe.value)} className="w-full border-slate-300 p-2 rounded-lg bg-white/80 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
+                        <input id="search" type="text" placeholder="Enter faculty name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full border-slate-300 p-2 rounded-lg bg-white/80 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
                     </div>
                     <div>
                         <label htmlFor="filterDept" className="text-sm font-medium text-slate-600 flex items-center gap-2 mb-1.5"><FaFilter /> Filter by Department</label>
