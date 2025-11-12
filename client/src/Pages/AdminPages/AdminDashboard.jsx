@@ -13,31 +13,33 @@ import NavbarAdmin from "./NavbarAdmin";
 import axios from "axios";
 import { motion } from "framer-motion";
 
-// Helper for a nicely formatted date
-const getCurrentDate = () => {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+// Helper for formatted date
+const getCurrentDate = () =>
+  new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
-};
 
-// A redesigned StatCard component for a more modern look
+// --- ✨ Modern Stat Card ---
 const StatCard = ({ title, value, icon, color }) => (
   <motion.div
+    whileHover={{ scale: 1.05 }}
     variants={{
-      hidden: { opacity: 0, y: 20 },
+      hidden: { opacity: 0, y: 30 },
       visible: { opacity: 1, y: 0 },
     }}
-    className={`relative p-5 rounded-xl overflow-hidden text-white shadow-lg transition-transform transform hover:scale-105 ${color}`}
+    className={`relative p-6 rounded-2xl shadow-lg text-white backdrop-blur-lg ${color}
+    bg-opacity-80 border border-white/20 transition-all duration-300 overflow-hidden`}
   >
     <div className="relative z-10">
-      <h3 className="text-sm font-semibold uppercase tracking-wider opacity-80">{title}</h3>
-      {/* Show 0 while loading, then the value */}
-      <p className="text-4xl font-bold mt-1">{value || 0}</p>
+      <h3 className="text-sm font-medium uppercase tracking-wide opacity-90">
+        {title}
+      </h3>
+      <p className="text-5xl font-extrabold mt-2 drop-shadow-sm">{value || 0}</p>
     </div>
-    <div className="absolute -right-4 -bottom-4 text-6xl opacity-20 z-0">
+    <div className="absolute -right-2 -bottom-2 text-7xl opacity-15 z-0">
       {icon}
     </div>
   </motion.div>
@@ -51,70 +53,64 @@ const AdminDashboard = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/public/get-announcements`);
-      console.log(response.data.announcements)
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/public/get-announcements`
+      );
       setAnnouncements(response.data.announcements);
     } catch (err) {
       console.error("Failed to fetch announcements:", err);
     }
   };
 
-  // FIX: Renamed function for consistency (countDeatils -> countDetails)
   const countDetails = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/admin/count-details`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/admin/count-details`
+      );
       setDetails(response.data.data);
     } catch (err) {
       console.error("Failed to fetch counts:", err);
     }
-  }
+  };
 
   useEffect(() => {
     fetchAnnouncements();
-    countDetails(); // FIX: Changed to match renamed function
+    countDetails();
   }, []);
 
-  // --- ERROR FIXES ARE HERE ---
   const stats = [
     {
       title: "Total Students",
-      // FIX: Removed extra {} and added || 0 for default
       value: details?.studentCount,
       icon: <FaUserGraduate />,
-      color: "bg-gradient-to-br from-blue-400 to-blue-600"
+      color: "bg-gradient-to-br from-blue-400 to-blue-600",
     },
     {
       title: "Total Faculty",
-      // FIX: Corrected typo 'deatils' -> 'details' and removed {}
       value: details?.facultyCount,
       icon: <FaChalkboardTeacher />,
-      color: "bg-gradient-to-br from-green-400 to-green-600"
+      color: "bg-gradient-to-br from-green-400 to-green-600",
     },
     {
       title: "Courses",
-      // FIX: Corrected typo 'deatils' -> 'details' and removed {}
       value: details?.courseCount,
       icon: <FaBookOpen />,
-      color: "bg-gradient-to-br from-yellow-400 to-yellow-600"
+      color: "bg-gradient-to-br from-yellow-400 to-yellow-600",
     },
     {
       title: "Notices",
-      // FIX: Removed extra {}
       value: details?.announcementCount,
       icon: <FaRegNewspaper />,
-      color: "bg-gradient-to-br from-purple-400 to-purple-600"
+      color: "bg-gradient-to-br from-purple-400 to-purple-600",
     },
     {
-      title: "Department",
-      // FIX: Corrected typo 'deatils' -> 'details' and removed {}
+      title: "Departments",
       value: details?.departmentCount,
       icon: <FaBullhorn />,
-      color: "bg-gradient-to-br from-pink-400 to-pink-600"
+      color: "bg-gradient-to-br from-pink-400 to-pink-600",
     },
   ];
-  // ------------------------------
 
-  // Animation variants for Framer Motion
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -124,79 +120,88 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 mt-12">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 mt-12">
       <NavbarAdmin toggleSidebar={() => setIsOpen(!isOpen)} />
-
       <div className="flex flex-1">
         <Sidebar isOpen={isOpen} />
 
-        <main className={`transition-all duration-300 flex-1 p-6 overflow-y-auto ${isOpen ? "ml-[220px]" : "ml-0"}`}>
-
-          {/* ===== Welcome Header ===== */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h2 className="text-3xl font-bold text-slate-800">
-              Welcome back, {admin?.name || 'Admin'}! 👋
+        <main
+          className={`transition-all duration-500 flex-1 p-8 overflow-y-auto ${
+            isOpen ? "ml-[220px]" : "ml-0"
+          }`}
+        >
+          {/* ===== Header ===== */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-10"
+          >
+            <h2 className="text-4xl font-bold text-slate-800 flex items-center gap-3">
+              Welcome back, {admin?.name || "Admin"}! 👋
             </h2>
-            <p className="text-slate-500 mt-1 flex items-center gap-2">
+            <p className="text-slate-500 mt-2 flex items-center gap-2">
               <FaCalendarAlt className="text-slate-400" />
               {getCurrentDate()}
             </p>
           </motion.div>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
-              >
-                {stats.map((stat, i) => (
-                  <StatCard key={i} {...stat} />
-                ))}
-              </motion.div>
+          {/* ===== Stats Grid ===== */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {stats.map((stat, i) => (
+              <StatCard key={i} {...stat} />
+            ))}
+          </motion.div>
+
+          {/* ===== Announcements ===== */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-12 bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-lg border border-white/20"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
+                <FaBullhorn className="text-pink-500" /> Recent Announcements
+              </h3>
             </div>
 
-            <div className="lg:col-span-1">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 h-full"
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-xl font-semibold text-slate-700 flex items-center gap-3">
-                    <FaBullhorn className="text-pink-500" /> Recent Announcements
-                  </h3>
+            <div className="space-y-4">
+              {announcements.length === 0 ? (
+                <div className="text-center py-8">
+                  <FaRegNewspaper className="mx-auto text-5xl text-slate-300 mb-3" />
+                  <p className="text-slate-500 italic">
+                    No announcements to show.
+                  </p>
                 </div>
-
-                <div className="space-y-4">
-                  {announcements.length === 0 ? (
-                    <div className="text-center py-8">
-                      <FaRegNewspaper className="mx-auto text-4xl text-slate-300 mb-2" />
-                      <p className="text-slate-500 italic">No announcements to show.</p>
+              ) : (
+                announcements.slice(0, 5).map((item) => (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="flex items-start gap-4 p-4 rounded-xl bg-white shadow-sm hover:shadow-md border border-slate-200/60 transition-all duration-300"
+                  >
+                    <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-pink-400 to-pink-600 text-white rounded-full flex items-center justify-center">
+                      <FaBullhorn />
                     </div>
-                  ) : (
-                    announcements.slice(0, 5).map((item) => (
-                      <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
-                        <div className="flex-shrink-0 h-10 w-10 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center">
-                          <FaBullhorn />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-slate-800 text-sm">
-                            {item.title}
-                          </h4>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {new Date(item.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </motion.div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-800 text-base">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
-          </div>
+          </motion.div>
         </main>
       </div>
     </div>
