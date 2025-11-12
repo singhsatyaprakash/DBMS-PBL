@@ -25,4 +25,4 @@ CREATE TABLE SubjectFaculty (
 desc subjectfaculty;
 
 
-s
+select * from subjectFaculty;
