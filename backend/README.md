@@ -1,3 +1,380 @@
+# University Management System — Backend
+
+This document describes the backend API for the University Management System built with Node.js + Express and MySQL. It includes a complete list of routes, examples of requests/responses, database model summaries (tabular), setup instructions, and how to enable a private admin enrollment route so you can enroll an initial admin using Hoppscotch (or Postman).
+
+## Table of contents
+
+- Overview
+- Quick start
+- Environment variables
+- How to run
+- Enabling private admin creation (Hoppscotch)
+- API endpoints (with request & response examples)
+- Database models (tabular)
+- Bulk operations & file uploads
+- Error handling and common responses
+- Notes & next steps
+
+---
+
+## Overview
+
+This backend exposes REST endpoints for admin, faculty, and student authentication and management; courses and subjects; semester-wise subject assignment; announcements (with file upload); and bulk student import. It uses MySQL as the primary data store and Cloudinary (or local `uploads/`) for storing announcement files.
+
+Code entrypoint: `app.js` (in `backend/`). Key folders:
+
+- `controllers/` — route handlers
+- `routes/` — route definitions
+- `services/` — business logic (e.g., admin.services.js)
+- `db/` — DB and cloudinary/multer connectors
+- `model/` — SQL files describing tables
+
+## Quick start
+
+1. Copy `.env.example` to `.env` and set values (see Environment variables below).
+2. Install dependencies:
+
+```bash
+cd backend
+npm install
+```
+
+3. Start the server (development):
+
+```bash
+set PORT=5000 && node app.js
+```
+
+4. Server listens on the `PORT` defined in `.env` (or `process.env.PORT`). Test with: `GET /check`.
+
+## Environment variables (example)
+
+Create a `.env` at `backend/` with at least:
+
+- PORT=5000
+- DB_HOST=localhost
+- DB_USER=root
+- DB_PASSWORD=your_db_password
+- DB_NAME=university
+- CLOUDINARY_URL=... (if using Cloudinary)
+
+## How to run
+
+- Start MySQL and ensure `DB_NAME` exists (you can run `model/createDatabase.sql`).
+- Run node server: `node app.js` (or use nodemon in dev).
+
+## Enabling private admin creation (useful to seed the first admin)
+
+By default the repository includes a private route that can create an admin programmatically (useful for bootstrapping). In `app.js` the private route is commented out. To enable the private route so you can create an admin via Hoppscotch or Postman:
+
+1. Open `backend/app.js` and find these lines near the top:
+
+```js
+// const privateRoutes=require('./private/admin.create');
+// app.use("/private",privateRoutes);
+```
+
+2. Uncomment them so they read:
+
+```js
+const privateRoutes = require('./private/admin.create');
+app.use('/private', privateRoutes);
+```
+
+3. Restart the backend.
+
+4. Use Hoppscotch (https://hoppscotch.io) or Postman to send a POST to `http://localhost:PORT/private/create-admin` (or the exact private route path if different) with the required body (see `private/admin.create.js` for the expected body). This creates an admin in the `admin` table.
+
+Hoppscotch quick steps:
+
+- Open Hoppscotch → Method: POST → URL: `http://localhost:5000/private/create-admin`
+- Header: `Content-Type: application/json`
+- Body (JSON): `{ "name": "Admin Name", "email": "admin@example.com", "password": "StrongPass123" }`
+- Send — inspect response and then login via `/admin/signin`.
+
+> Important: after you bootstrap the first admin, consider removing or locking down the private route for security.
+
+## API endpoints (high-level + examples)
+
+Common conventions:
+
+- All protected admin/faculty/student routes return 401 if token invalid or missing.
+- `multipart/form-data` used for file uploads.
+
+Base path mapping in `app.js`:
+
+- `/admin` → admin routes
+- `/faculty` → faculty routes
+- `/student` → student routes
+- `/public` → public/all-users routes
+
+### Admin
+
+1) POST /admin/signin — Admin login
+
+Request example
+
+```json
+POST /admin/signin
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "password123" }
+```
+
+Success response (200):
+
+```json
+{ "message": "Login successful", "token": "<jwt-token>", "role": "admin" }
+```
+
+2) POST /admin/add-faculty — Add faculty (admin-only)
+
+Request example
+
+```json
+POST /admin/add-faculty
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Dr. Alice",
+  "department": "Computer Science",
+  "email": "alice@univ.edu",
+  "dob": "1980-02-12"
+}
+```
+
+Response (201):
+
+```json
+{ "message": "Faculty added successfully", "faculty_id": 123 }
+```
+
+3) POST /admin/add-student — Add single student
+
+Request example
+
+```json
+POST /admin/add-student
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Bob",
+  "email": "bob@student.edu",
+  "course_id": 1,
+  "branch_id": 2,
+  "dob": "2003-08-05"
+}
+```
+
+Response (201):
+
+```json
+{ "success": true, "message": "Student added successfully", "data": { "student_id": 456 } }
+```
+
+4) POST /admin/add-bulk-student — Bulk add students (CSV/XLSX)
+
+Request: multipart/form-data with field `file` (CSV/Excel). The server will parse and insert multiple student rows.
+
+Response (200):
+
+```json
+{ "message": "Bulk students added successfully", "added": 120, "failed": 2, "failedEmails": ["bad@example.com"] }
+```
+
+5) POST /admin/upload-announcement — Announcement with optional file
+
+Request: multipart/form-data fields: `type`, `title`, `description`, `file` (optional).
+
+Response (201):
+
+```json
+{ "message": "Announcement saved successfully", "url": "https://.../uploads/xxx.pdf" }
+```
+
+### Courses & Subjects (Admin)
+
+1) POST /admin/add-new-course
+
+Request example
+
+```json
+{ "course_name": "B.Tech Computer Science", "duration_years": 4, "total_semesters": 8, "course_code": "BTECH-CS", "department_id": 1, "description": "..." }
+```
+
+Response:
+
+```json
+{ "message": "Course added successfully", "course_id": 1 }
+```
+
+2) GET /admin/get-all-courses
+
+Response example
+
+```json
+[ { "course_id": 1, "course_name": "B.Tech Computer Science", "duration_years": 4, "course_code": "BTECH-CS" }, ... ]
+```
+
+3) POST /admin/add-new-subject
+
+Request example
+
+```json
+{ "subject_name":"Data Structures","subject_code":"CS201","semester":3,"credits":4,"course_id":1 }
+```
+
+Response:
+
+```json
+{ "message": "Subject added successfully", "subject_id": 21 }
+```
+
+4) GET /admin/get-all-subjects — returns all subjects
+
+5) GET /admin/get-all-subjects-by-course/:course — returns subjects for a given course
+
+6) POST /admin/add-course-subjects-semster-wise
+
+Request example
+
+```json
+{ "course_id": 1, "semester": 3, "subject_ids": [5,7,9] }
+```
+
+Response:
+
+```json
+{ "message": "Subjects for semester updated successfully" }
+```
+
+### Faculty
+
+POST /faculty/login — faculty login (email/password), returns token like admin.
+
+### Student
+
+POST /student/login — student login (email/password), returns token like admin.
+
+### Public / Announcements
+
+GET `/public/announcements` — returns announcements (most recent first). Each announcement includes `file_url` if file uploaded.
+
+---
+
+## Database models (tabular)
+
+Below are the core tables and representative columns (drawn from `model/*.sql`). Use these as a quick reference.
+
+### admin
+
+| Column | Type | Notes |
+|---|---:|---|
+| admin_id | INT PRIMARY KEY AUTO_INCREMENT | PK |
+| name | VARCHAR(25) | admin full name |
+| email | VARCHAR(100) NOT NULL UNIQUE | login email |
+| password | VARCHAR(100) | hashed password |
+| token | VARCHAR(500) | last-issued token (optional) |
+| role | VARCHAR(50) DEFAULT 'admin' | role label |
+
+Source: `model/admin.sql`
+
+### Courses
+
+| Column | Type | Notes |
+|---|---:|---|
+| course_id | INT PK AUTO_INCREMENT | PK |
+| course_name | VARCHAR(100) NOT NULL | human name |
+| duration_years | INT NOT NULL | duration in years |
+| total_semesters | INT NOT NULL | total sems |
+| course_code | VARCHAR(20) UNIQUE | short code |
+| department | VARCHAR(100) | department name (legacy) |
+| department_id | INT | FK to `department` (if used) |
+| description | TEXT | description |
+
+Source: `model/course.sql`
+
+### Subjects
+
+| Column | Type | Notes |
+|---|---:|---|
+| subject_id | INT PK AUTO_INCREMENT | PK |
+| subject_name | VARCHAR(100) NOT NULL | |
+| subject_code | VARCHAR(20) NOT NULL UNIQUE | |
+| semester | INT NOT NULL | semester number |
+| credits | INT NOT NULL | credit points |
+| description | TEXT | optional |
+| course_id | INT NOT NULL | FK → Courses(course_id) |
+| branch_id | INT | FK → Course_Branch(branch_id) |
+
+Source: `model/subjects.sql`
+
+### announcement
+
+| Column | Type | Notes |
+|---|---:|---|
+| announcement_id | INT PK AUTO_INCREMENT | PK |
+| title | VARCHAR(255) NOT NULL | |
+| type | ENUM('Holiday','Academic','Sports','Exam','Fees','Admission','Others') NOT NULL | |
+| description | TEXT | |
+| file_url | VARCHAR(500) | stored file URL/path |
+| admin_id | INT NOT NULL | FK → admin(admin_id) |
+| created_at | TIMESTAMP DEFAULT CURRENT_TIMESTAMP | |
+
+Source: `model/announcement.sql`
+
+### Representative other tables
+
+- `faculty` — columns: faculty_id, name, email, department_id, password, dob, phone, created_at
+- `student` — columns: student_id, name, email, course_id, branch_id, roll_no, password, dob
+- `Course_Branch` — branch_id, branch_name, course_id
+- `Course_Subject` / `Faculty_Subject` / `Student_Subject` — mapping tables that relate entities via FK ids
+- `Attendance`, `Result` (if present) — use typical columns (`attendance_id`, `student_id`, `status`, `date`)
+
+For the exact column list, see the SQL files in `backend/model/`.
+
+## Bulk operations & file uploads
+
+- Student bulk import: `POST /admin/add-bulk-student` (multipart/form-data: file field). Accepts CSV/XLS(X). The controller will parse rows, validate, and insert.
+- Announcement upload: `POST /admin/upload-announcement` (multipart/form-data) — file will be uploaded to the configured storage and `file_url` saved to the `announcement` table.
+
+Important: ensure `db/multer.conn.js` and `db/cloudinary.conn.js` are configured with your environment values.
+
+## Error handling & common responses
+
+- 200 — OK (fetch)
+- 201 — Created (successful POST creating resource)
+- 400 — Bad Request (validation error) — response includes `message` and optionally `errors` array
+- 401 — Unauthorized (missing/invalid token)
+- 403 — Forbidden (insufficient permissions)
+- 404 — Not found
+- 500 — Server error — include message and log stack on server
+
+Example error response:
+
+```json
+{ "success": false, "message": "Validation failed", "errors": ["email is required"] }
+```
+
+## Notes & next steps
+
+- To bootstrap the first admin: enable the private route in `app.js` (see earlier section), then call the private admin create endpoint from Hoppscotch or Postman.
+- After bootstrapping, for security remove or protect the private route (or keep it behind an allow-list or local-only access).
+- Consider adding OpenAPI (Swagger) documentation to keep the docs in sync with route code.
+
+If you want, I can also:
+
+- Generate a small OpenAPI spec for these routes.
+- Create example Postman collection or Hoppscotch share link.
+- Add a short `backend/README-quick-commands.md` with exact curl commands.
+
+---
+
+If anything in the routes or controllers changed since this doc, tell me which endpoints to add or if you want the README to include exact route paths and request fields from the controller code — I can extract them and produce a fully accurate OpenAPI file.
+
+For further details, contact: singhsatyaprakash70675@gmail.com
 # University Management System API Documentation
 
 This document provides a complete overview of the backend API for the University Management System, including authentication, faculty/student management, courses, subjects, semester-wise subject mapping, bulk operations, and announcement uploads. It also details the database schema for all models.
